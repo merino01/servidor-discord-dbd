@@ -1,0 +1,23 @@
+{
+	"discord": {
+		"token": "MTA2MzU1MDMwOTgzMTU0MDgxOA.GN13Y5.-HwLBoVUgXIBaN2JPySWqHdflwleKI6XsiqOFU",
+		"guildId": "1438911813730439301",
+		"clientId": "1063550309831540818"
+	},
+	"bot": {
+		"ownerId": "346667985521475595",
+		"prefix": "!"
+	},
+	"database": {
+		"url": "postgresql://user:password@localhost:5432/discord_bot"
+	},
+	"features": {
+		"triggers": {
+			"enabled": true,
+			"maxPerGuild": 100
+		},
+		"autoMod": {
+			"enabled": true
+		}
+	}
+}

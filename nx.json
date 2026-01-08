@@ -27,7 +27,8 @@
           "buildDepsName": "build-deps",
           "watchDepsName": "watch-deps"
         }
-      }
+      },
+      "exclude": ["libs/logger/*"]
     },
     {
       "plugin": "@nx/eslint/plugin",
@@ -69,6 +70,15 @@
         "targetName": "test"
       },
       "exclude": ["apps/bot-e2e/**/*", "apps/dashboard/server-e2e/**/*"]
+    },
+    {
+      "plugin": "@nx/js/typescript",
+      "include": ["libs/logger/*"],
+      "options": {
+        "typecheck": {
+          "targetName": "typecheck"
+        }
+      }
     }
   ],
   "nxCloudId": "695f99c274f0ff4da27b4af7",

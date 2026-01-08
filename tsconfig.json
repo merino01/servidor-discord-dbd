@@ -20,6 +20,9 @@
     },
     {
       "path": "./apps/dashboard/server"
+    },
+    {
+      "path": "./libs/logger"
     }
   ]
 }

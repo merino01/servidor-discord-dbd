@@ -1,106 +1,100 @@
 {
-  "name": "@org/bot",
-  "version": "0.0.1",
-  "private": true,
-  "nx": {
-    "targets": {
-      "build": {
-        "executor": "@nx/esbuild:esbuild",
-        "outputs": [
-          "{options.outputPath}"
-        ],
-        "defaultConfiguration": "production",
-        "options": {
-          "platform": "node",
-          "outputPath": "apps/bot/dist",
-          "format": [
-            "cjs"
-          ],
-          "bundle": false,
-          "main": "apps/bot/src/main.ts",
-          "tsConfig": "apps/bot/tsconfig.app.json",
-          "assets": [
-            "apps/bot/src/assets"
-          ],
-          "esbuildOptions": {
-            "sourcemap": true,
-            "outExtension": {
-              ".js": ".js"
-            }
-          }
-        },
-        "configurations": {
-          "development": {},
-          "production": {
-            "esbuildOptions": {
-              "sourcemap": false,
-              "outExtension": {
-                ".js": ".js"
-              }
-            }
-          }
-        }
-      },
-      "prune-lockfile": {
-        "dependsOn": [
-          "build"
-        ],
-        "cache": true,
-        "executor": "@nx/js:prune-lockfile",
-        "outputs": [
-          "{workspaceRoot}/apps/bot/dist/package.json",
-          "{workspaceRoot}/apps/bot/dist/package-lock.json"
-        ],
-        "options": {
-          "buildTarget": "build"
-        }
-      },
-      "copy-workspace-modules": {
-        "dependsOn": [
-          "build"
-        ],
-        "cache": true,
-        "outputs": [
-          "{workspaceRoot}/apps/bot/dist/workspace_modules"
-        ],
-        "executor": "@nx/js:copy-workspace-modules",
-        "options": {
-          "buildTarget": "build"
-        }
-      },
-      "prune": {
-        "dependsOn": [
-          "prune-lockfile",
-          "copy-workspace-modules"
-        ],
-        "executor": "nx:noop"
-      },
-      "serve": {
-        "continuous": true,
-        "executor": "@nx/js:node",
-        "defaultConfiguration": "development",
-        "dependsOn": [
-          "build"
-        ],
-        "options": {
-          "buildTarget": "@org/bot:build",
-          "runBuildTargetDependencies": false
-        },
-        "configurations": {
-          "development": {
-            "buildTarget": "@org/bot:build:development"
-          },
-          "production": {
-            "buildTarget": "@org/bot:build:production"
-          }
-        }
-      },
-      "test": {
-        "options": {
-          "passWithNoTests": true
-        }
-      }
-    }
-  },
-  "dependencies": {}
+	"name": "@org/bot",
+	"version": "0.0.1",
+	"private": true,
+	"nx": {
+		"targets": {
+			"build": {
+				"executor": "@nx/esbuild:esbuild",
+				"outputs": [
+					"{options.outputPath}"
+				],
+				"defaultConfiguration": "production",
+				"options": {
+					"platform": "node",
+					"outputPath": "apps/bot/dist",
+					"format": [
+						"cjs"
+					],
+					"bundle": true,
+					"thirdParty": true,
+					"main": "apps/bot/src/main.ts",
+					"tsConfig": "apps/bot/tsconfig.app.json",
+					"assets": [
+						"apps/bot/src/assets"
+					],
+					"esbuildOptions": {
+						"sourcemap": false,
+						"outExtension": {
+							".js": ".js"
+						}
+					}
+				},
+				"configurations": {
+					"development": {},
+					"production": {}
+				}
+			},
+			"prune-lockfile": {
+				"dependsOn": [
+					"build"
+				],
+				"cache": true,
+				"executor": "@nx/js:prune-lockfile",
+				"outputs": [
+					"{workspaceRoot}/apps/bot/dist/package.json",
+					"{workspaceRoot}/apps/bot/dist/package-lock.json"
+				],
+				"options": {
+					"buildTarget": "build"
+				}
+			},
+			"copy-workspace-modules": {
+				"dependsOn": [
+					"build"
+				],
+				"cache": true,
+				"outputs": [
+					"{workspaceRoot}/apps/bot/dist/workspace_modules"
+				],
+				"executor": "@nx/js:copy-workspace-modules",
+				"options": {
+					"buildTarget": "build"
+				}
+			},
+			"prune": {
+				"dependsOn": [
+					"prune-lockfile",
+					"copy-workspace-modules"
+				],
+				"executor": "nx:noop"
+			},
+			"serve": {
+				"continuous": true,
+				"executor": "@nx/js:node",
+				"defaultConfiguration": "development",
+				"dependsOn": [
+					"build"
+				],
+				"options": {
+					"buildTarget": "@org/bot:build",
+					"runBuildTargetDependencies": false
+				},
+				"configurations": {
+					"development": {
+						"buildTarget": "@org/bot:build:development"
+					},
+					"production": {
+						"buildTarget": "@org/bot:build:production"
+					}
+				}
+			},
+			"test": {
+				"options": {
+					"passWithNoTests": true
+				}
+			}
+		}
+	},
+	"dependencies": {}
 }

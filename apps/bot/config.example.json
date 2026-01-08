@@ -1,0 +1,23 @@
+{
+	"discord": {
+		"token": "TU_TOKEN_DE_DISCORD_AQUI",
+		"guildId": "ID_DEL_SERVIDOR_OPCIONAL_PARA_DESARROLLO",
+		"clientId": "ID_DE_TU_APLICACION"
+	},
+	"bot": {
+		"ownerId": "TU_USER_ID_PARA_COMANDOS_DE_OWNER",
+		"prefix": "!"
+	},
+	"database": {
+		"url": "postgresql://user:password@localhost:5432/discord_bot"
+	},
+	"features": {
+		"triggers": {
+			"enabled": true,
+			"maxPerGuild": 100
+		},
+		"autoMod": {
+			"enabled": true
+		}
+	}
+}

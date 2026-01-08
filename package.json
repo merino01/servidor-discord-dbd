@@ -59,7 +59,8 @@
     "apps/dashboard/client",
     "apps/*",
     "apps/dashboard/server",
-    "apps/dashboard/server-e2e"
+    "apps/dashboard/server-e2e",
+    "libs/*"
   ],
   "dependencies": {
     "axios": "^1.6.0",
