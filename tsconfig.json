@@ -2,5 +2,24 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": []
+  "references": [
+    {
+      "path": "./apps/dashboard/client-e2e"
+    },
+    {
+      "path": "./apps/dashboard/client"
+    },
+    {
+      "path": "./apps/bot-e2e"
+    },
+    {
+      "path": "./apps/bot"
+    },
+    {
+      "path": "./apps/dashboard/server-e2e"
+    },
+    {
+      "path": "./apps/dashboard/server"
+    }
+  ]
 }
