@@ -23,6 +23,12 @@
     },
     {
       "path": "./libs/logger"
+    },
+    {
+      "path": "./packages/mongo"
+    },
+    {
+      "path": "./packages/models"
     }
   ]
 }

@@ -2,7 +2,7 @@ import {
 	SlashCommandOptions,
 	SubCommandOptions
 } from "@types"
-import { logger } from "@org/logger"
+import { botLogger } from "@core/logger"
 
 // Registro global de comandos
 const commandRegistry = new Map<string, any>()
@@ -24,21 +24,22 @@ export function registerCommand (CommandClass: any, options: SlashCommandOptions
 	// Registrar en el Map global
 	commandRegistry.set(options.name, CommandClass)
 
-	logger.info(`Comando registrado: /${options.name}`)
+	botLogger.info(`Comando registrado: /${options.name}`)
 }
 
 /**
  * Registra un subcomando
  */
-export function registerSubCommand (target: any, methodName: string, options: SubCommandOptions): void {
-	if (!target.constructor.__subCommands) {
-		target.constructor.__subCommands = []
+export function registerSubCommand (CommandClass: any, methodName: string, options: SubCommandOptions): void {
+	if (!CommandClass.__subCommands) {
+		CommandClass.__subCommands = []
 	}
 
-	target.constructor.__subCommands.push({
+	CommandClass.__subCommands.push({
 		name: options.name,
 		description: options.description,
-		methodName
+		methodName,
+		options: options.options || []
 	})
 }
 

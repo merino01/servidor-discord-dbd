@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from "node:fs"
 import { join } from "node:path"
-import { logger } from "@org/logger"
+import { botLogger } from "@core/logger"
 
 export interface BotConfig {
   discord: {
@@ -11,9 +11,6 @@ export interface BotConfig {
   bot: {
     ownerId: string;
     prefix: string;
-  };
-  database?: {
-    url: string;
   };
   features?: {
     triggers?: {
@@ -54,7 +51,7 @@ export function loadConfig (configPath?: string): BotConfig {
 		validateConfig(config)
 
 		cachedConfig = config
-		logger.info("Configuración cargada correctamente")
+		botLogger.info("Configuración cargada correctamente")
 		return config
 	} catch (error) {
 		if (error instanceof SyntaxError) {

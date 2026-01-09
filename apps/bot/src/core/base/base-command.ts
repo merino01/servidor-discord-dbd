@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from "discord.js"
+import { SlashCommandBuilder, MessageFlags } from "discord.js"
 import {
 	ICommand,
 	CommandContext
@@ -36,14 +36,78 @@ export abstract class BaseCommand implements ICommand {
 	}
 
 	/**
+   * Agrega opciones a un subcomando según su tipo
+   */
+	private addSubcommandOption (sub: any, option: any): void {
+		switch (option.type) {
+		case 3: // STRING
+			sub.addStringOption((opt: any) => {
+				opt.setName(option.name)
+					.setDescription(option.description)
+					.setRequired(option.required ?? false)
+				if (option.choices) {
+					opt.addChoices(...option.choices)
+				}
+				return opt
+			})
+			break
+		case 4: // INTEGER
+			sub.addIntegerOption((opt: any) => {
+				opt.setName(option.name)
+					.setDescription(option.description)
+					.setRequired(option.required ?? false)
+				if (option.choices) {
+					opt.addChoices(...option.choices)
+				}
+				return opt
+			})
+			break
+		case 5: // BOOLEAN
+			sub.addBooleanOption((opt: any) => opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			)
+			break
+		case 6: // USER
+			sub.addUserOption((opt: any) => opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			)
+			break
+		case 7: // CHANNEL
+			sub.addChannelOption((opt: any) => opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			)
+			break
+		case 8: // ROLE
+			sub.addRoleOption((opt: any) => opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			)
+			break
+		}
+	}
+
+	/**
    * Registra automáticamente todos los subcomandos
    */
 	private registerSubCommands (): void {
 		const subcommands = getSubCommandsMetadata(this.constructor)
 
 		for (const subcommand of subcommands) {
-			this.data.addSubcommand((sub) => sub.setName(subcommand.name).setDescription(subcommand.description)
-			)
+			this.data.addSubcommand((sub) => {
+				sub.setName(subcommand.name).setDescription(subcommand.description)
+
+				// Agregar opciones si existen
+				if (subcommand.options?.length) {
+					for (const option of subcommand.options) {
+						this.addSubcommandOption(sub, option)
+					}
+				}
+
+				return sub
+			})
 		}
 	}
 
@@ -68,7 +132,7 @@ export abstract class BaseCommand implements ICommand {
 		if (!subcommand) {
 			await interaction.reply({
 				content: "❌ Subcomando no encontrado.",
-				ephemeral: true
+				flags: MessageFlags.Ephemeral
 			})
 			return
 		}

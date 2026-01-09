@@ -1,7 +1,7 @@
 import { Client, Collection } from "discord.js"
 import { ICommand } from "@types"
 import { getRegisteredCommands } from "./decorators/command.decorators"
-import { logger } from "@org/logger"
+import { botLogger } from "@core/logger"
 
 /**
  * Registro de comandos del bot
@@ -40,7 +40,7 @@ export class CommandRegistry {
    * Carga todos los comandos desde el registro global de decoradores
    */
 	loadCommands (): void {
-		logger.info("Cargando comandos del registro...")
+		botLogger.info("Cargando comandos del registro...")
 
 		const registeredCommands = getRegisteredCommands()
 
@@ -49,11 +49,11 @@ export class CommandRegistry {
 				const command = new CommandClass()
 				this.register(command)
 			} catch (error) {
-				logger.error(`Error instanciando comando ${name}: `, error)
+				botLogger.error(`Error instanciando comando ${name}: `, error)
 			}
 		}
 
-		logger.info(`${this.commands.size} comandos cargados`)
+		botLogger.info(`${this.commands.size} comandos cargados`)
 	}
 
 	/**
@@ -63,19 +63,19 @@ export class CommandRegistry {
 		const commands = this.getAll().map((cmd) => cmd.data.toJSON())
 
 		try {
-			logger.info("Desplegando comandos en Discord...")
+			botLogger.info("Desplegando comandos en Discord...")
 
 			if (guildId) {
 				// Registrar en un guild específico (más rápido para desarrollo)
 				await this.client.application?.commands.set(commands, guildId)
-				logger.info(`Comandos desplegados en el guild ${guildId}`)
+				botLogger.info(`Comandos desplegados en el guild ${guildId}`)
 			} else {
 				// Registrar globalmente (tarda hasta 1 hora en propagarse)
 				await this.client.application?.commands.set(commands)
-				logger.info("Comandos desplegados globalmente")
+				botLogger.info("Comandos desplegados globalmente")
 			}
 		} catch (error) {
-			logger.error("Error desplegando comandos: ", error)
+			botLogger.error("Error desplegando comandos: ", error)
 		}
 	}
 }

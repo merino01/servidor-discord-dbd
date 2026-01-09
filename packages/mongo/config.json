@@ -1,0 +1,3 @@
+{
+	"mongo_uri": "mongodb://admin:aC5ldUtdHddQ@localhost:27017/discord-bot?authSource=admin"
+}

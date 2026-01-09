@@ -9,7 +9,7 @@
 		"prefix": "!"
 	},
 	"database": {
-		"url": "postgresql://user:password@localhost:5432/discord_bot"
+		"mongoUri": "mongodb://admin:aC5ldUtdHddQ@localhost:27017/discord-bot?authSource=admin"
 	},
 	"features": {
 		"triggers": {

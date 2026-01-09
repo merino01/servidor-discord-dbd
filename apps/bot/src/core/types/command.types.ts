@@ -12,6 +12,30 @@ export interface CommandContext {
 }
 
 /**
+ * Tipos de opciones para comandos
+ */
+export enum OptionType {
+  STRING = 3,
+  INTEGER = 4,
+  BOOLEAN = 5,
+  USER = 6,
+  CHANNEL = 7,
+  ROLE = 8,
+  NUMBER = 10
+}
+
+/**
+ * Interfaz para una opción de comando
+ */
+export interface CommandOption {
+  name: string;
+  description: string;
+  type: OptionType;
+  required?: boolean;
+  choices?: Array<{ name: string; value: string | number }>;
+}
+
+/**
  * Opciones para definir un comando slash
  */
 export interface SlashCommandOptions {
@@ -28,6 +52,7 @@ export interface SlashCommandOptions {
 export interface SubCommandOptions {
   name: string;
   description: string;
+  options?: CommandOption[];
 }
 
 /**

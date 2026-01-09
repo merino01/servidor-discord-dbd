@@ -1,6 +1,6 @@
 import { ClientEvents } from "discord.js"
 import { EventHandler, EventMetadata } from "@types"
-import { logger } from "@org/logger"
+import { botLogger } from "@core/logger"
 
 // Registro global de eventos
 const eventRegistry: EventMetadata[] = []
@@ -24,7 +24,7 @@ export function registerEvent<K extends keyof ClientEvents> (
 	})
 
 	const modulePrefix = options?.module ? `[${options.module}] ` : ""
-	logger.info(`Evento registrado: ${modulePrefix}${eventName}`)
+	botLogger.info(`Evento registrado: ${modulePrefix}${eventName}`)
 }
 
 /**

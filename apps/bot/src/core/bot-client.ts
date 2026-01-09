@@ -1,8 +1,9 @@
-import { Client, Events, GatewayIntentBits } from "discord.js"
+import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js"
 import { CommandRegistry } from "./command-registry"
 import { getRegisteredEvents } from "./event-registry"
+import { getButtonHandler, getSelectMenuHandler, getModalHandler } from "./components/component-registry"
 import { CommandContext } from "@types"
-import { logger } from "@org/logger"
+import { botLogger } from "@core/logger"
 
 /**
  * Cliente principal del bot con gestión de comandos integrada
@@ -29,41 +30,142 @@ export class BotClient extends Client {
    */
 	private setupEventHandlers (): void {
 		this.once(Events.ClientReady, async (client) => {
-			logger.info(`Bot conectado como ${client.user.tag}`)
+			botLogger.info(`Bot conectado como ${client.user.tag}`)
 		})
 
 		this.on(Events.InteractionCreate, async (interaction) => {
-			if (!interaction.isChatInputCommand()) {return}
-
-			const command = this.commands.get(interaction.commandName)
-
-			if (!command) {
-				logger.warn(`Comando no encontrado: ${interaction.commandName}`)
-				return
-			}
-
-			try {
-				const context: CommandContext = {
-					interaction
-					// Aquí puedes agregar más contexto (db, cache, etc.)
-				}
-
-				await command.execute(context)
-			} catch (error) {
-				logger.error(`Error ejecutando comando ${interaction.commandName}: `, error)
-
-				const errorMessage = {
-					content: "❌ Hubo un error ejecutando este comando.",
-					ephemeral: true
-				}
-
-				if (interaction.replied || interaction.deferred) {
-					await interaction.followUp(errorMessage)
-				} else {
-					await interaction.reply(errorMessage)
-				}
+			if (interaction.isChatInputCommand()) {
+				await this.handleCommand(interaction)
+			} else if (interaction.isButton()) {
+				await this.handleButton(interaction)
+			} else if (interaction.isStringSelectMenu()) {
+				await this.handleSelectMenu(interaction)
+			} else if (interaction.isModalSubmit()) {
+				await this.handleModal(interaction)
 			}
 		})
+	}
+
+	/**
+   * Maneja la ejecución de comandos slash
+   */
+	private async handleCommand (interaction: any): Promise<void> {
+		const command = this.commands.get(interaction.commandName)
+
+		if (!command) {
+			botLogger.warn(`Comando no encontrado: ${interaction.commandName}`)
+			return
+		}
+
+		// Log automático de ejecución de comando
+		const subcommand = interaction.options.getSubcommand?.(false)
+		const commandPath = subcommand
+			? `/${interaction.commandName} ${subcommand}`
+			: `/${interaction.commandName}`
+
+		// Extraer opciones para el log
+		const options: Record<string, any> = {}
+		interaction.options.data.forEach((option: any) => {
+			if (option.type === 1 || option.type === 2) {
+				// Subcomando o grupo de subcomandos - extraer sus opciones
+				option.options?.forEach((subOption: any) => {
+					options[subOption.name] = subOption.value
+				})
+			} else {
+				// Opción directa
+				options[option.name] = option.value
+			}
+		})
+
+		const optionsStr = Object.keys(options).length > 0
+			? ` | Opciones: ${JSON.stringify(options)}`
+			: ""
+
+		const userLog = `Usuario: ${interaction.user.tag} (${interaction.user.id})`
+		const guildLog = interaction.guild
+			? ` | Guild: ${interaction.guild.name} (${interaction.guild.id})`
+			: " | DM"
+		botLogger.info(
+			`Comando ejecutado: ${commandPath} | ${userLog}${guildLog}${optionsStr}`
+		)
+
+		try {
+			const context: CommandContext = { interaction }
+			await command.execute(context)
+		} catch (error) {
+			botLogger.error(`Error ejecutando comando ${interaction.commandName}: `, error)
+			await this.replyError(interaction, "❌ Hubo un error ejecutando este comando.")
+		}
+	}
+
+	/**
+   * Maneja interacciones de botones
+   */
+	private async handleButton (interaction: any): Promise<void> {
+		const handler = getButtonHandler(interaction.customId)
+
+		if (!handler) {
+			botLogger.warn(`Handler de botón no encontrado: ${interaction.customId}`)
+			return
+		}
+
+		try {
+			await handler(interaction)
+		} catch (error) {
+			botLogger.error(`Error en botón ${interaction.customId}: `, error)
+			await this.replyError(interaction, "❌ Hubo un error procesando esta acción.")
+		}
+	}
+
+	/**
+   * Maneja interacciones de select menus
+   */
+	private async handleSelectMenu (interaction: any): Promise<void> {
+		const handler = getSelectMenuHandler(interaction.customId)
+
+		if (!handler) {
+			botLogger.warn(`Handler de select menu no encontrado: ${interaction.customId}`)
+			return
+		}
+
+		try {
+			await handler(interaction)
+		} catch (error) {
+			botLogger.error(`Error en select menu ${interaction.customId}: `, error)
+			await this.replyError(interaction, "❌ Hubo un error procesando esta selección.")
+		}
+	}
+
+	/**
+   * Maneja interacciones de modales
+   */
+	private async handleModal (interaction: any): Promise<void> {
+		const handler = getModalHandler(interaction.customId)
+
+		if (!handler) {
+			botLogger.warn(`Handler de modal no encontrado: ${interaction.customId}`)
+			return
+		}
+
+		try {
+			await handler(interaction)
+		} catch (error) {
+			botLogger.error(`Error en modal ${interaction.customId}: `, error)
+			await this.replyError(interaction, "❌ Hubo un error procesando este formulario.")
+		}
+	}
+
+	/**
+   * Responde con un mensaje de error a una interacción
+   */
+	private async replyError (interaction: any, message: string): Promise<void> {
+		const errorMessage = { content: message, flags: MessageFlags.Ephemeral }
+
+		if (interaction.replied || interaction.deferred) {
+			await interaction.followUp(errorMessage)
+		} else {
+			await interaction.reply(errorMessage)
+		}
 	}
 
 	/**
@@ -72,7 +174,7 @@ export class BotClient extends Client {
 	private registerCustomEvents (): void {
 		const events = getRegisteredEvents()
 
-		logger.info("Registrando eventos personalizados...")
+		botLogger.info("Registrando eventos personalizados...")
 
 		for (const event of events) {
 			if (event.once) {
@@ -80,7 +182,7 @@ export class BotClient extends Client {
 					try {
 						await event.handler(...args)
 					} catch (error) {
-						logger.error(`Error en evento ${event.name}:`, error)
+						botLogger.error(`Error en evento ${event.name}:`, error)
 					}
 				})
 			} else {
@@ -88,13 +190,13 @@ export class BotClient extends Client {
 					try {
 						await event.handler(...args)
 					} catch (error) {
-						logger.error(`Error en evento ${event.name}: `, error)
+						botLogger.error(`Error en evento ${event.name}: `, error)
 					}
 				})
 			}
 		}
 
-		logger.info(`${events.length} eventos registrados`)
+		botLogger.info(`${events.length} eventos registrados`)
 	}
 
 	/**
