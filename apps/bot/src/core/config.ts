@@ -33,16 +33,45 @@ export function loadConfig (configPath?: string): BotConfig {
 		return cachedConfig
 	}
 
-	// Determinar la ruta del config.json
-	const finalPath = configPath || join(process.cwd(), "apps", "bot", "config.json")
-
-	if (!existsSync(finalPath)) {
-		throw new Error(
-			`❌ No se encontró el archivo de configuración en: ${finalPath}\n` +
-      "   Copia config.example.json a config.json y configúralo."
-		)
+	// Si se proporciona una ruta específica, usarla
+	if (configPath) {
+		const finalPath = configPath
+		if (!existsSync(finalPath)) {
+			throw new Error(
+				`❌ No se encontró el archivo de configuración en: ${finalPath}\n` +
+				"   Copia config.example.json a config.json y configúralo."
+			)
+		}
+		return loadFromPath(finalPath)
 	}
 
+	// Intentar varias ubicaciones posibles
+	const possiblePaths = [
+		// En el directorio actual (para producción: dist/)
+		join(process.cwd(), "config.json"),
+		// En el directorio del ejecutable (dist/)
+		join(__dirname, "..", "config.json"),
+		// En desarrollo desde src/core
+		join(__dirname, "..", "..", "config.json"),
+		// Ruta absoluta al directorio del bot
+		join(process.cwd(), "apps", "bot", "config.json")
+	]
+
+	for (const path of possiblePaths) {
+		if (existsSync(path)) {
+			botLogger.info(`Config encontrado en: ${path}`)
+			return loadFromPath(path)
+		}
+	}
+
+	throw new Error(
+		"❌ No se encontró el archivo de configuración en ninguna ubicación:\n" +
+		possiblePaths.map((p) => `   - ${p}`).join("\n") +
+		"\n   Copia config.example.json a config.json y configúralo."
+	)
+}
+
+function loadFromPath (finalPath: string): BotConfig {
 	try {
 		const configFile = readFileSync(finalPath, "utf-8")
 		const config: BotConfig = JSON.parse(configFile)

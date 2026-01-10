@@ -26,9 +26,6 @@
     },
     {
       "path": "./packages/mongo"
-    },
-    {
-      "path": "./packages/models"
     }
   ]
 }

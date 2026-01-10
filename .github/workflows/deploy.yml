@@ -1,0 +1,32 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/servidor-discord-dbd
+            echo "📥 Obteniendo últimos cambios..."
+            git pull origin main
+
+            echo "📦 Instalando dependencias..."
+            npm install
+
+            echo "🔄 Reiniciando servicios PM2..."
+            pm2 restart ecosystem.config.js
+
+            echo "✅ Deploy completado!"
