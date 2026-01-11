@@ -1,0 +1,60 @@
+import { EventEmitter } from "node:events"
+import { ChatInputCommandInteraction, Message, VoiceState, Guild, GuildMember } from "discord.js"
+
+/**
+ * Tipos de eventos del bot
+ */
+export interface BotEvents {
+	// Comandos
+	"command:executed": [interaction: ChatInputCommandInteraction, commandPath: string, options: Record<string, any>]
+	"command:error": [interaction: ChatInputCommandInteraction, error: Error]
+
+	// Mensajes
+	"message:created": [message: Message]
+	"message:deleted": [message: Message]
+	"message:edited": [oldMessage: Message, newMessage: Message]
+
+	// Voz
+	"voice:join": [member: GuildMember, voiceState: VoiceState]
+	"voice:leave": [member: GuildMember, voiceState: VoiceState]
+	"voice:move": [member: GuildMember, oldState: VoiceState, newState: VoiceState]
+
+	// Miembros
+	"member:join": [member: GuildMember]
+	"member:leave": [member: GuildMember]
+	"member:ban": [guild: Guild, userId: string]
+	"member:unban": [guild: Guild, userId: string]
+
+	// Moderación
+	"moderation:timeout": [member: GuildMember, duration: number, reason?: string]
+	"moderation:kick": [member: GuildMember, reason?: string]
+}
+
+/**
+ * EventEmitter tipado para eventos del bot
+ */
+class TypedEventEmitter extends EventEmitter {
+	override emit<K extends keyof BotEvents> (event: K, ...args: BotEvents[K]): boolean {
+		return super.emit(event, ...args)
+	}
+
+	override on<K extends keyof BotEvents> (event: K, listener: (...args: BotEvents[K]) => void): this {
+		return super.on(event, listener)
+	}
+
+	override once<K extends keyof BotEvents> (event: K, listener: (...args: BotEvents[K]) => void): this {
+		return super.once(event, listener)
+	}
+
+	override off<K extends keyof BotEvents> (event: K, listener: (...args: BotEvents[K]) => void): this {
+		return super.off(event, listener)
+	}
+}
+
+/**
+ * Instancia única del EventEmitter del bot
+ */
+export const botEvents = new TypedEventEmitter()
+
+// Aumentar el límite de listeners (útil para módulos que escuchan múltiples eventos)
+botEvents.setMaxListeners(50)

@@ -1,3 +1,5 @@
 export * from "./trigger.model"
 export * from "./guild-settings.model"
 export * from "./user-stats.model"
+export * from "./log-config.model"
+export * from "./command-log.model"

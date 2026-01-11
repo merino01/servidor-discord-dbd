@@ -4,6 +4,7 @@ import { getRegisteredEvents } from "./event-registry"
 import { getButtonHandler, getSelectMenuHandler, getModalHandler } from "./components/component-registry"
 import { CommandContext } from "@types"
 import { botLogger } from "@core/logger"
+import { botEvents } from "./events/bot-events"
 
 /**
  * Cliente principal del bot con gestión de comandos integrada
@@ -92,8 +93,15 @@ export class BotClient extends Client {
 		try {
 			const context: CommandContext = { interaction }
 			await command.execute(context)
+
+			// Emitir evento de comando ejecutado
+			botEvents.emit("command:executed", interaction, commandPath, options)
 		} catch (error) {
 			botLogger.error(`Error ejecutando comando ${interaction.commandName}: `, error)
+
+			// Emitir evento de error
+			botEvents.emit("command:error", interaction, error as Error)
+
 			await this.replyError(interaction, "❌ Hubo un error ejecutando este comando.")
 		}
 	}

@@ -2,7 +2,6 @@ import { startBot } from "./bootstrap"
 import { botLogger } from "@core/logger"
 
 async function main () {
-
 	botLogger.info("Iniciando bot de Discord")
 
 	try {
