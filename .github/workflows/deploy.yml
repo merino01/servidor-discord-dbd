@@ -19,10 +19,10 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd ~/servidor-discord-dbd
+            cd ~/dev/servidor-discord-dbd
 
             echo "📥 Obteniendo últimos cambios..."
-            git pull origin main
+            git pull
 
             echo "📦 Instalando dependencias..."
             npm install
