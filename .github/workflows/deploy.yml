@@ -20,13 +20,24 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd ~/servidor-discord-dbd
+
             echo "📥 Obteniendo últimos cambios..."
             git pull origin main
 
             echo "📦 Instalando dependencias..."
             npm install
 
-            echo "🔄 Reiniciando servicios PM2..."
-            pm2 restart ecosystem.config.js
+            echo "🏗️ Construyendo aplicaciones..."
+            npx nx run-many -t build
+
+            echo "📋 Copiando cliente al servidor..."
+            rm -rf apps/dashboard/server/dist-client
+            cp -r apps/dashboard/client/dist apps/dashboard/server/dist-client
+
+            echo "🔄 Recargando servicios PM2..."
+            pm2 reload ecosystem.config.js || pm2 start ecosystem.config.js
+
+            echo "📊 Estado actual:"
+            pm2 status
 
             echo "✅ Deploy completado!"
