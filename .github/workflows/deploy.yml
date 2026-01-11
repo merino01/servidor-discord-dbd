@@ -19,26 +19,27 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            source ~/.bashrc
+            bash -lc "
             cd ~/dev/servidor-discord-dbd
 
-            echo "📥 Obteniendo últimos cambios..."
+            echo '📥 Obteniendo últimos cambios...'
             git pull
 
-            echo "📦 Instalando dependencias..."
+            echo '📦 Instalando dependencias...'
             npm install
 
-            echo "🏗️ Construyendo aplicaciones..."
+            echo '🏗️ Construyendo aplicaciones...'
             npx nx run-many -t build
 
-            echo "📋 Copiando cliente al servidor..."
+            echo '📋 Copiando cliente al servidor...'
             rm -rf apps/dashboard/server/dist-client
             cp -r apps/dashboard/client/dist apps/dashboard/server/dist-client
 
-            echo "🔄 Recargando servicios PM2..."
+            echo '🔄 Recargando servicios PM2...'
             pm2 reload ecosystem.config.js || pm2 start ecosystem.config.js
 
-            echo "📊 Estado actual:"
+            echo '📊 Estado actual:'
             pm2 status
 
-            echo "✅ Deploy completado!"
+            echo '✅ Deploy completado!'
+            "
