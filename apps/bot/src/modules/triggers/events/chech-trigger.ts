@@ -1,4 +1,4 @@
-import { Events, Message } from "discord.js"
+import { Events, Message, OmitPartialGroupDMChannel, PartialMessage } from "discord.js"
 import { registerEvent } from "@/core/event-registry"
 import { logger } from "@org/logger"
 import { TriggerModel, TriggerMatchType } from "@org/mongo"
@@ -137,3 +137,17 @@ registerEvent(
 	}
 )
 
+registerEvent(
+	Events.MessageUpdate,
+	async (oldMessage: OmitPartialGroupDMChannel<Message<boolean> | PartialMessage>, newMessage: Message) => {
+		if (newMessage.author?.bot || !newMessage.guildId) {return}
+		try {
+			await processMessageTriggers(newMessage)
+		} catch (error) {
+			triggersLogger.error("Error verificando triggers en mensaje editado:", error)
+		}
+	},
+	{
+		module: "triggers"
+	}
+)
