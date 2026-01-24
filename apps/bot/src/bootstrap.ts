@@ -6,6 +6,7 @@ import { connectMongo } from "@org/mongo"
 import "./events"
 import "./modules/triggers"
 import "./modules/logs"
+import "./modules/channel-formats"
 
 export async function startBot () {
 	const config = loadConfig()

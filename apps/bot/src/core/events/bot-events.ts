@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events"
-import { ChatInputCommandInteraction, Message, VoiceState, Guild, GuildMember } from "discord.js"
+import { ChatInputCommandInteraction, Message, VoiceState, Guild, GuildMember, PartialMessage } from "discord.js"
 
 /**
  * Tipos de eventos del bot
@@ -12,7 +12,7 @@ export interface BotEvents {
 	// Mensajes
 	"message:created": [message: Message]
 	"message:deleted": [message: Message]
-	"message:edited": [oldMessage: Message, newMessage: Message]
+	"message:edited": [oldMessage: Message | PartialMessage, newMessage: Message | PartialMessage]
 
 	// Voz
 	"voice:join": [member: GuildMember, voiceState: VoiceState]
