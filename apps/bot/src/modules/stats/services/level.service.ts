@@ -1,4 +1,5 @@
 import { UserStatsModel } from "@org/mongo"
+import { getConfig } from "@/core/config"
 
 export class LevelService {
 	// XP necesaria para alcanzar cada nivel (crecimiento exponencial)
@@ -71,13 +72,26 @@ export class LevelService {
 		}
 	}
 
-	// XP por enviar un mensaje (con cooldown)
-	static readonly MESSAGE_XP = 5
+	// Obtiene configuración de XP desde config
+	static getMessageXp (): number {
+		const config = getConfig()
+		return config.features?.stats?.messageXp ?? 5
+	}
 
-	// XP por minuto en canal de voz
-	static readonly VOICE_XP_PER_MINUTE = 2
+	static getVoiceXpPerMinute (): number {
+		const config = getConfig()
+		return config.features?.stats?.voiceXpPerMinute ?? 2
+	}
 
-	// Cooldown entre mensajes para ganar XP (1 minuto)
-	static readonly MESSAGE_COOLDOWN_MS = 60 * 1000
+	static getMessageCooldownMs (): number {
+		const config = getConfig()
+		return config.features?.stats?.messageCooldownMs ?? 60_000
+	}
+
+	static getLevelUpChannelId (): string | undefined {
+		const config = getConfig()
+		const channelId = config.features?.stats?.levelUpNotificationChannelId
+		return channelId && channelId.trim() !== "" ? channelId : undefined
+	}
 }
 

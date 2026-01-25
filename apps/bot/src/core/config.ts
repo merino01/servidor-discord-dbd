@@ -20,6 +20,13 @@ export interface BotConfig {
     autoMod?: {
       enabled: boolean;
     };
+    stats?: {
+      enabled: boolean;
+      messageXp: number;
+      voiceXpPerMinute: number;
+      messageCooldownMs: number;
+      levelUpNotificationChannelId?: string;
+    };
   };
 }
 

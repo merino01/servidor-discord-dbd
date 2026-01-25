@@ -18,6 +18,13 @@
 		},
 		"autoMod": {
 			"enabled": true
+		},
+		"stats": {
+			"enabled": true,
+			"messageXp": 5,
+			"voiceXpPerMinute": 2,
+			"messageCooldownMs": 15000,
+			"levelUpNotificationChannelId": "1359234299819327588"
 		}
 	}
 }

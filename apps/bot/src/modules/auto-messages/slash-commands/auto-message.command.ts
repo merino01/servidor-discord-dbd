@@ -10,12 +10,14 @@ import {
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder,
 	GuildBasedChannel,
-	APIInteractionDataResolvedChannel
+	APIInteractionDataResolvedChannel,
+	ChatInputCommandInteraction
 } from "discord.js"
 import { AutoMessageModel, AutoMessageTargetType, IAutoMessage } from "@org/mongo"
 import { botLogger } from "@/core/logger"
 import { AutoMessageService } from "../services/auto-message.service"
 import { getVariablesList } from "../allowed-variables"
+import { buildAutoMessageInfoEmbed } from "../utils/embed-builder"
 
 const autoMessageLogger = botLogger.child("auto-messages")
 
@@ -286,21 +288,43 @@ export class AutoMessageCommand extends BaseCommand {
 		return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)
 	}
 
-	async listar (context: CommandContext): Promise<void> {
-		const { interaction } = context
+	private async showAutoMessageInfo (
+		interaction: ChatInputCommandInteraction,
+		messageId: string,
+		guildId: string
+	): Promise<void> {
+		try {
+			const autoMessage = await AutoMessageModel.findOne({
+				_id: messageId,
+				guildId
+			})
 
-		if (!interaction.guildId) {
+			if (!autoMessage) {
+				await interaction.reply({
+					content: `❌ No se encontró un mensaje automático con el ID \`${messageId}\``,
+					flags: MessageFlags.Ephemeral
+				})
+				return
+			}
+
+			const embed = buildAutoMessageInfoEmbed(autoMessage)
+			await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
+		} catch (error) {
+			autoMessageLogger.error("Error al obtener info del mensaje automático:", error)
 			await interaction.reply({
-				content: "❌ Este comando solo funciona en servidores.",
+				content: "❌ Error al obtener la información del mensaje automático.",
 				flags: MessageFlags.Ephemeral
 			})
-			return
 		}
+	}
 
-		const verEliminados = interaction.options.getBoolean("ver-eliminados") ?? false
-
+	private async showAutoMessageList (
+		interaction: ChatInputCommandInteraction,
+		guildId: string,
+		verEliminados: boolean
+	): Promise<void> {
 		try {
-			const filter: Record<string, unknown> = { guildId: interaction.guildId }
+			const filter: Record<string, unknown> = { guildId }
 
 			if (verEliminados) {
 				filter.deletedAt = { $ne: null }
@@ -332,6 +356,27 @@ export class AutoMessageCommand extends BaseCommand {
 				content: "❌ Error al listar los mensajes automáticos.",
 				flags: MessageFlags.Ephemeral
 			})
+		}
+	}
+
+	async info (context: CommandContext): Promise<void> {
+		const { interaction } = context
+
+		if (!interaction.guildId) {
+			await interaction.reply({
+				content: "❌ Este comando solo funciona en servidores.",
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
+
+		const messageId = interaction.options.getString("id")
+
+		if (messageId) {
+			await this.showAutoMessageInfo(interaction, messageId, interaction.guildId)
+		} else {
+			const verEliminados = interaction.options.getBoolean("ver-eliminados") ?? false
+			await this.showAutoMessageList(interaction, interaction.guildId, verEliminados)
 		}
 	}
 
@@ -386,102 +431,6 @@ export class AutoMessageCommand extends BaseCommand {
 			autoMessageLogger.error("Error al eliminar mensaje automático:", error)
 			await interaction.reply({
 				content: "❌ Error al eliminar el mensaje automático.",
-				flags: MessageFlags.Ephemeral
-			})
-		}
-	}
-
-	private buildInfoEmbed (autoMessage: IAutoMessage): EmbedBuilder {
-		const targetInfo = autoMessage.targetType === AutoMessageTargetType.CHANNEL
-			? `📍 Canal: <#${autoMessage.targetId}>`
-			: `📁 Categoría: <#${autoMessage.targetId}>`
-
-		let statusText = "✅ Activo"
-		let statusColor = 0x00ff00
-
-		if (autoMessage.deletedAt) {
-			statusText = "🗑️ Eliminado"
-			statusColor = 0xff0000
-		} else if (!autoMessage.isActive) {
-			statusText = "⏸️ Pausado"
-			statusColor = 0xffa500
-		}
-
-		const embed = new EmbedBuilder()
-			.setColor(statusColor)
-			.setTitle(autoMessage.name)
-			.addFields(
-				{ name: "Estado", value: statusText, inline: true },
-				{ name: "ID", value: autoMessage._id.toString(), inline: true },
-				{
-					name: "Tipo",
-					value: autoMessage.cronExpression
-						? "⏰ Programado (cron)"
-						: "📁 Al crear canal",
-					inline: true
-				}
-			)
-
-		if (autoMessage.cronExpression) {
-			embed.addFields({ name: "Cron", value: `\`${autoMessage.cronExpression}\``, inline: true })
-		}
-
-		embed.addFields(
-			{ name: "Destino", value: targetInfo, inline: false },
-			{
-				name: "Mensaje",
-				value: autoMessage.message ? autoMessage.message.substring(0, 1000) : "Embed solo",
-				inline: false
-			},
-			{ name: "Ejecuciones", value: autoMessage.executionCount.toString(), inline: true },
-			{ name: "Creado por", value: `<@${autoMessage.createdBy}>`, inline: true }
-		)
-
-		if (autoMessage.lastExecutionAt) {
-			embed.addFields({
-				name: "Última ejecución",
-				value: `<t:${Math.floor(autoMessage.lastExecutionAt.getTime() / 1000)}:R>`,
-				inline: true
-			})
-		}
-
-		return embed
-	}
-
-	async info (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guildId) {
-			await interaction.reply({
-				content: "❌ Este comando solo funciona en servidores.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		const messageId = interaction.options.getString("id", true)
-
-		try {
-			const autoMessage = await AutoMessageModel.findOne({
-				_id: messageId,
-				guildId: interaction.guildId
-			})
-
-			if (!autoMessage) {
-				await interaction.reply({
-					content: `❌ No se encontró un mensaje automático con el ID \`${messageId}\``,
-					flags: MessageFlags.Ephemeral
-				})
-				return
-			}
-
-			const embed = this.buildInfoEmbed(autoMessage)
-
-			await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
-		} catch (error) {
-			autoMessageLogger.error("Error al obtener info del mensaje automático:", error)
-			await interaction.reply({
-				content: "❌ Error al obtener la información del mensaje automático.",
 				flags: MessageFlags.Ephemeral
 			})
 		}
@@ -565,7 +514,7 @@ export class AutoMessageCommand extends BaseCommand {
 				{ name: "Nombre", value: result.autoMessage.name, inline: true },
 				{ name: "ID", value: messageId, inline: true }
 			)
-			.setDescription("Puedes reactivarlo cuando quieras usando `/auto-message reanudar`")
+			.setDescription("Puedes reactivarlo cuando quieras usando `/automensaje reanudar`")
 			.setFooter({ text: `Pausado por ${interaction.user.tag}` })
 
 		await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
@@ -676,19 +625,6 @@ registerSubCommand(AutoMessageCommand, "crear", {
 	]
 })
 
-registerSubCommand(AutoMessageCommand, "listar", {
-	name: "listar",
-	description: "Lista todos los mensajes automáticos",
-	options: [
-		{
-			name: "ver-eliminados",
-			description: "Mostrar mensajes automáticos eliminados",
-			type: OptionType.BOOLEAN,
-			required: false
-		}
-	]
-})
-
 registerSubCommand(AutoMessageCommand, "eliminar", {
 	name: "eliminar",
 	description: "Elimina un mensaje automático",
@@ -704,13 +640,19 @@ registerSubCommand(AutoMessageCommand, "eliminar", {
 
 registerSubCommand(AutoMessageCommand, "info", {
 	name: "info",
-	description: "Muestra información detallada de un mensaje automático",
+	description: "Muestra info de un mensaje o lista todos con un menú",
 	options: [
 		{
 			name: "id",
-			description: "ID del mensaje automático",
+			description: "ID del mensaje automático (opcional, sin ID muestra lista)",
 			type: OptionType.STRING,
-			required: true
+			required: false
+		},
+		{
+			name: "ver-eliminados",
+			description: "Mostrar mensajes automáticos eliminados (solo si no se proporciona ID)",
+			type: OptionType.BOOLEAN,
+			required: false
 		}
 	]
 })

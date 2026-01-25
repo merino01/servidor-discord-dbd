@@ -4,7 +4,14 @@ import {
 	registerSubCommand
 } from "@core/decorators/command.decorators"
 import { CommandContext, OptionType } from "@types"
-import { EmbedBuilder, MessageFlags, UserManager } from "discord.js"
+import {
+	EmbedBuilder,
+	MessageFlags,
+	UserManager,
+	ActionRowBuilder,
+	ButtonBuilder,
+	ButtonStyle
+} from "discord.js"
 import { UserStatsModel } from "@org/mongo"
 import { LevelService } from "../services/level.service"
 import { botLogger } from "@/core/logger"
@@ -120,6 +127,25 @@ async function getRankingData (
 	return { sortCriteria, title }
 }
 
+function createRankingButtons (currentType: string): ActionRowBuilder<ButtonBuilder> {
+	return new ActionRowBuilder<ButtonBuilder>().addComponents(
+		new ButtonBuilder()
+			.setCustomId("ranking:xp")
+			.setLabel("🏆 Nivel")
+			.setStyle(currentType === "xp" ? ButtonStyle.Primary : ButtonStyle.Secondary),
+		new ButtonBuilder()
+			.setCustomId("ranking:mensajes")
+			.setLabel("💬 Mensajes")
+			.setStyle(
+				currentType === "mensajes" ? ButtonStyle.Primary : ButtonStyle.Secondary
+			),
+		new ButtonBuilder()
+			.setCustomId("ranking:voz")
+			.setLabel("🎤 Voz")
+			.setStyle(currentType === "voz" ? ButtonStyle.Primary : ButtonStyle.Secondary)
+	)
+}
+
 async function buildRankingEmbed (
 	guildId: string,
 	guildName: string,
@@ -208,7 +234,7 @@ export class StatsCommand extends BaseCommand {
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		const rankingType = interaction.options.getString("tipo") ?? "xp"
+		const rankingType = "xp"
 		const guildId = interaction.guildId
 		const guildName = interaction.guild?.name
 
@@ -233,7 +259,9 @@ export class StatsCommand extends BaseCommand {
 			return
 		}
 
-		await interaction.editReply({ embeds: [embed] })
+		const buttons = createRankingButtons(rankingType)
+
+		await interaction.editReply({ embeds: [embed], components: [buttons] })
 		statsLogger.info(
 			`User ${interaction.user.id} viewed ${rankingType} ranking`
 		)
@@ -261,18 +289,5 @@ registerSubCommand(StatsCommand, "perfil", {
 
 registerSubCommand(StatsCommand, "ranking", {
 	name: "ranking",
-	description: "Ver el ranking del servidor",
-	options: [
-		{
-			name: "tipo",
-			description: "Tipo de ranking",
-			type: OptionType.STRING,
-			required: false,
-			choices: [
-				{ name: "XP/Nivel", value: "xp" },
-				{ name: "Mensajes", value: "mensajes" },
-				{ name: "Voz", value: "voz" }
-			]
-		}
-	]
+	description: "Ver el ranking del servidor"
 })
