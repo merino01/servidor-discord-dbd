@@ -1,2 +1,4 @@
 import "./message-create"
 import "./message-update"
+import "./message-delete"
+import "./voice-state-update"

@@ -18,6 +18,10 @@ export interface BotEvents {
 	"voice:join": [member: GuildMember, voiceState: VoiceState]
 	"voice:leave": [member: GuildMember, voiceState: VoiceState]
 	"voice:move": [member: GuildMember, oldState: VoiceState, newState: VoiceState]
+	"voice:mute": [member: GuildMember, voiceState: VoiceState]
+	"voice:unmute": [member: GuildMember, voiceState: VoiceState]
+	"voice:deaf": [member: GuildMember, voiceState: VoiceState]
+	"voice:undeaf": [member: GuildMember, voiceState: VoiceState]
 
 	// Miembros
 	"member:join": [member: GuildMember]

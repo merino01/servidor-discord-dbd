@@ -1,2 +1,4 @@
 import "./slash-commands/logs.command"
 import "./listeners/command-logs.listener"
+import "./listeners/message-logs.listener"
+import "./listeners/voice-logs.listener"
