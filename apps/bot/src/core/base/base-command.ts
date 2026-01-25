@@ -33,6 +33,12 @@ export abstract class BaseCommand implements ICommand {
 
 		// Agregar subcomandos automáticamente
 		this.registerSubCommands()
+
+		// Si no hay subcomandos, agregar opciones del comando principal
+		const subcommands = getSubCommandsMetadata(this.constructor)
+		if (subcommands.length === 0 && metadata.options) {
+			this.registerCommandOptions(metadata.options)
+		}
 	}
 
 	/**
@@ -82,6 +88,69 @@ export abstract class BaseCommand implements ICommand {
 			break
 		case 8: // ROLE
 			sub.addRoleOption((opt: any) => opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			)
+			break
+		}
+	}
+
+	/**
+   * Registra opciones del comando principal (para comandos sin subcomandos)
+   */
+	private registerCommandOptions (options: any[]): void {
+		for (const option of options) {
+			this.addCommandOption(option)
+		}
+	}
+
+	/**
+   * Agrega una opción al comando principal según su tipo
+   */
+	private addCommandOption (option: any): void {
+		switch (option.type) {
+		case 3: // STRING
+			this.data.addStringOption((opt) => {
+				opt.setName(option.name)
+					.setDescription(option.description)
+					.setRequired(option.required ?? false)
+				if (option.choices) {
+					opt.addChoices(...option.choices)
+				}
+				return opt
+			})
+			break
+		case 4: // INTEGER
+			this.data.addIntegerOption((opt) => {
+				opt.setName(option.name)
+					.setDescription(option.description)
+					.setRequired(option.required ?? false)
+				if (option.choices) {
+					opt.addChoices(...option.choices)
+				}
+				return opt
+			})
+			break
+		case 5: // BOOLEAN
+			this.data.addBooleanOption((opt) => opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			)
+			break
+		case 6: // USER
+			this.data.addUserOption((opt) => opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			)
+			break
+		case 7: // CHANNEL
+			this.data.addChannelOption((opt) => opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			)
+			break
+		case 8: // ROLE
+			this.data.addRoleOption((opt) => opt.setName(option.name)
 				.setDescription(option.description)
 				.setRequired(option.required ?? false)
 			)

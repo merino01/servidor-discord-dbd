@@ -44,6 +44,7 @@ export interface SlashCommandOptions {
   permissions?: bigint | number | null;
   guildOnly?: boolean;
   ownerOnly?: boolean;
+  options?: CommandOption[];
 }
 
 /**
