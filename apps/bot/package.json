@@ -101,5 +101,7 @@
 			}
 		}
 	},
-	"dependencies": {}
+	"dependencies": {
+		"cron": "^4.4.0"
+	}
 }

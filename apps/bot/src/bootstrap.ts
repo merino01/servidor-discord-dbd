@@ -7,6 +7,7 @@ import "./events"
 import "./modules/triggers"
 import "./modules/logs"
 import "./modules/channel-formats"
+import "./modules/auto-messages"
 
 export async function startBot () {
 	const config = loadConfig()

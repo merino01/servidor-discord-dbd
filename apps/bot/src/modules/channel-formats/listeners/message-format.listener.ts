@@ -22,7 +22,9 @@ async function validateMessageFormat (message: Message | PartialMessage): Promis
 
 	const format = await ChannelFormatModel.findOne({
 		guildId: message.guild.id,
-		channelId: message.channel.id
+		channelId: message.channel.id,
+		isActive: true,
+		deletedAt: null
 	})
 
 	if (!format) {
