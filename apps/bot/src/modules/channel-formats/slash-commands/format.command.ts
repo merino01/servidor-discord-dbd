@@ -75,7 +75,7 @@ export class FormatCommand extends BaseCommand {
 		}
 	}
 
-	async listar (context: CommandContext): Promise<void> {
+	async info (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
 		if (!interaction.guildId) {
@@ -451,8 +451,8 @@ registerSubCommand(FormatCommand, "configurar", {
 	]
 })
 
-registerSubCommand(FormatCommand, "listar", {
-	name: "listar",
+registerSubCommand(FormatCommand, "info", {
+	name: "info",
 	description: "Lista todos los formatos configurados",
 	options: [
 		{

@@ -215,7 +215,7 @@ export class TriggerCommand extends BaseCommand {
 		return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)
 	}
 
-	async listar (context: CommandContext): Promise<void> {
+	async info (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
 		if (!interaction.guildId) {
@@ -413,8 +413,8 @@ registerSubCommand(TriggerCommand, "crear", {
 		}
 	]
 })
-registerSubCommand(TriggerCommand, "listar", {
-	name: "listar",
+registerSubCommand(TriggerCommand, "info", {
+	name: "info",
 	description: "Lista todos los triggers del servidor",
 	options: [
 		{
