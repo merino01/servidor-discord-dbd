@@ -12,13 +12,6 @@
 		"mongoUri": "mongodb://admin:aC5ldUtdHddQ@localhost:27017/discord-bot?authSource=admin"
 	},
 	"features": {
-		"triggers": {
-			"enabled": true,
-			"maxPerGuild": 100
-		},
-		"autoMod": {
-			"enabled": true
-		},
 		"stats": {
 			"enabled": true,
 			"messageXp": 5,

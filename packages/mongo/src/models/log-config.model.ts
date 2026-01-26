@@ -5,6 +5,7 @@ import { Schema, model, Document } from "mongoose"
  */
 export enum LogType {
 	COMMANDS = "commands",
+	CLANS = "clans",
 	MESSAGES = "messages",
 	VOICE = "voice",
 	MODERATION = "moderation",
@@ -16,6 +17,12 @@ export interface ILogConfig extends Document {
 
 	// Configuración de logs de comandos
 	commands: {
+		enabled: boolean
+		channelId?: string
+	}
+
+	// Configuración de logs de clanes
+	clans: {
 		enabled: boolean
 		channelId?: string
 	}
@@ -94,6 +101,11 @@ const LogConfigSchema = new Schema<ILogConfig>({
 		channelId: { type: String },
 		logJoin: { type: Boolean, default: true },
 		logLeave: { type: Boolean, default: true }
+	},
+
+	clans: {
+		enabled: { type: Boolean, default: false },
+		channelId: { type: String }
 	},
 
 	createdAt: { type: Date, default: Date.now },

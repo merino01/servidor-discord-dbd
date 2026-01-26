@@ -18,7 +18,8 @@ export class LogsCommand extends BaseCommand {
 				messages: { enabled: false, logDeleted: true, logEdited: true },
 				voice: { enabled: false, logJoin: true, logLeave: true, logMove: true },
 				moderation: { enabled: false, logTimeouts: true, logKicks: true, logBans: true },
-				members: { enabled: false, logJoin: true, logLeave: true }
+				members: { enabled: false, logJoin: true, logLeave: true },
+				clans: { enabled: false }
 			})
 		}
 
@@ -33,6 +34,7 @@ export class LogsCommand extends BaseCommand {
 	): void {
 		const configMap: Record<LogType, { enabled: boolean; channelId?: string }> = {
 			[LogType.COMMANDS]: config.commands,
+			[LogType.CLANS]: config.clans,
 			[LogType.MESSAGES]: config.messages,
 			[LogType.VOICE]: config.voice,
 			[LogType.MODERATION]: config.moderation,
@@ -173,6 +175,7 @@ export class LogsCommand extends BaseCommand {
 	private getTipoLabel (tipo: LogType): string {
 		const labels: Record<LogType, string> = {
 			[LogType.COMMANDS]: "📝 Comandos",
+			[LogType.CLANS]: "📋 Clanes",
 			[LogType.MESSAGES]: "💬 Mensajes",
 			[LogType.VOICE]: "🔊 Voz",
 			[LogType.MODERATION]: "🛡️ Moderación",
@@ -212,6 +215,7 @@ registerSubCommand(LogsCommand, "configurar", {
 			required: true,
 			choices: [
 				{ name: "📝 Comandos", value: LogType.COMMANDS },
+				{ name: "📋 Clanes", value: LogType.CLANS },
 				{ name: "💬 Mensajes", value: LogType.MESSAGES },
 				{ name: "🔊 Voz", value: LogType.VOICE },
 				{ name: "🛡️ Moderación", value: LogType.MODERATION },

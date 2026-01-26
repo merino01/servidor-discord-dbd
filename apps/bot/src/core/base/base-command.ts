@@ -5,7 +5,8 @@ import {
 } from "@types"
 import {
 	getCommandMetadata,
-	getSubCommandsMetadata
+	getSubCommandsMetadata,
+	getSubCommandGroupsMetadata
 } from "@core/decorators/command.decorators"
 
 /**
@@ -159,24 +160,75 @@ export abstract class BaseCommand implements ICommand {
 	}
 
 	/**
-   * Registra automáticamente todos los subcomandos
+   * Registra automáticamente todos los subcomandos y grupos
    */
 	private registerSubCommands (): void {
 		const subcommands = getSubCommandsMetadata(this.constructor)
+		const groups = getSubCommandGroupsMetadata(this.constructor)
 
-		for (const subcommand of subcommands) {
-			this.data.addSubcommand((sub) => {
-				sub.setName(subcommand.name).setDescription(subcommand.description)
+		// Si hay grupos, organizar los subcomandos por grupos
+		if (groups.length > 0) {
+			for (const group of groups) {
+				this.data.addSubcommandGroup((grp) => {
+					grp.setName(group.name).setDescription(group.description)
 
-				// Agregar opciones si existen
-				if (subcommand.options?.length) {
-					for (const option of subcommand.options) {
-						this.addSubcommandOption(sub, option)
+					// Agregar subcomandos que pertenecen a este grupo
+					const groupSubcommands = subcommands.filter(
+						(sc) => sc.group === group.name
+					)
+
+					for (const subcommand of groupSubcommands) {
+						grp.addSubcommand((sub) => {
+							sub
+								.setName(subcommand.name)
+								.setDescription(subcommand.description)
+
+							// Agregar opciones si existen
+							if (subcommand.options?.length) {
+								for (const option of subcommand.options) {
+									this.addSubcommandOption(sub, option)
+								}
+							}
+
+							return sub
+						})
 					}
-				}
 
-				return sub
-			})
+					return grp
+				})
+			}
+
+			// Agregar subcomandos sin grupo (si existen)
+			const ungroupedSubcommands = subcommands.filter((sc) => !sc.group)
+			for (const subcommand of ungroupedSubcommands) {
+				this.data.addSubcommand((sub) => {
+					sub.setName(subcommand.name).setDescription(subcommand.description)
+
+					if (subcommand.options?.length) {
+						for (const option of subcommand.options) {
+							this.addSubcommandOption(sub, option)
+						}
+					}
+
+					return sub
+				})
+			}
+		} else {
+			// Sin grupos, agregar subcomandos directamente
+			for (const subcommand of subcommands) {
+				this.data.addSubcommand((sub) => {
+					sub.setName(subcommand.name).setDescription(subcommand.description)
+
+					// Agregar opciones si existen
+					if (subcommand.options?.length) {
+						for (const option of subcommand.options) {
+							this.addSubcommandOption(sub, option)
+						}
+					}
+
+					return sub
+				})
+			}
 		}
 	}
 
@@ -186,6 +238,7 @@ export abstract class BaseCommand implements ICommand {
 	async execute (context: CommandContext): Promise<void> {
 		const { interaction } = context
 		const subcommands = getSubCommandsMetadata(this.constructor)
+		const groups = getSubCommandGroupsMetadata(this.constructor)
 
 		if (subcommands.length === 0) {
 			// No hay subcomandos, ejecutar el comando principal
@@ -193,23 +246,49 @@ export abstract class BaseCommand implements ICommand {
 			return
 		}
 
-		// Enrutar al subcomando apropiado
-		const subcommandName = interaction.options.getSubcommand()
+		// Si hay grupos, obtener el grupo y el subcomando
+		let subcommandName: string
+		if (groups.length > 0) {
+			const groupName = interaction.options.getSubcommandGroup(false)
+			subcommandName = interaction.options.getSubcommand()
 
-		const subcommand = subcommands.find((sc) => sc.name === subcommandName)
+			// Buscar el subcomando, filtrando por grupo si existe
+			const subcommand = subcommands.find(
+				(sc) => sc.name === subcommandName && (!groupName || sc.group === groupName)
+			)
 
-		if (!subcommand) {
-			await interaction.reply({
-				content: "❌ Subcomando no encontrado.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
+			if (!subcommand) {
+				await interaction.reply({
+					content: "❌ Subcomando no encontrado.",
+					flags: MessageFlags.Ephemeral
+				})
+				return
+			}
 
-		// Ejecutar el método del subcomando
-		const method = (this as any)[subcommand.methodName]
-		if (typeof method === "function") {
-			await method.call(this, context)
+			// Ejecutar el método del subcomando
+			const method = (this as any)[subcommand.methodName]
+			if (typeof method === "function") {
+				await method.call(this, context)
+			}
+		} else {
+			// Sin grupos, enrutar directamente
+			subcommandName = interaction.options.getSubcommand()
+
+			const subcommand = subcommands.find((sc) => sc.name === subcommandName)
+
+			if (!subcommand) {
+				await interaction.reply({
+					content: "❌ Subcomando no encontrado.",
+					flags: MessageFlags.Ephemeral
+				})
+				return
+			}
+
+			// Ejecutar el método del subcomando
+			const method = (this as any)[subcommand.methodName]
+			if (typeof method === "function") {
+				await method.call(this, context)
+			}
 		}
 	}
 

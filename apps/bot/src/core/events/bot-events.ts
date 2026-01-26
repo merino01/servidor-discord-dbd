@@ -32,6 +32,77 @@ export interface BotEvents {
 	// Moderación
 	"moderation:timeout": [member: GuildMember, duration: number, reason?: string]
 	"moderation:kick": [member: GuildMember, reason?: string]
+
+	// Clanes
+	"clan:created": [data: { guildId: string; clanId: string; clanName: string; leaderId: string; createdBy: string }]
+	"clan:deleted": [data: { guildId: string; clanId: string; clanName: string; deletedBy: string }]
+	"clan:leaderAdded": [data: { guildId: string; clanId: string; clanName: string; leaderId: string; addedBy: string }]
+	"clan:leaderRemoved": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		leaderId: string;
+		removedBy: string
+	}]
+	"clan:memberAdded": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		memberId: string;
+		addedBy: string
+	}]
+	"clan:memberKicked": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		memberId: string;
+		removedBy: string
+	}]
+	"clan:memberLeft": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		memberId: string;
+		removedBy: string
+	}]
+	"clan:extraChannelAdded": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		channelId: string;
+		addedBy: string
+	}]
+	"clan:extraChannelRemoved": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		channelId: string;
+		removedBy: string
+	}]
+	"clan:invitationCreated": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		invitedUserId: string;
+		invitedBy: string;
+		invitationId: string
+	}]
+	"clan:invitationAccepted": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		invitedUserId: string;
+		invitedBy: string;
+		invitationId: string
+	}]
+	"clan:invitationRejected": [data: {
+		guildId: string;
+		clanId: string;
+		clanName: string;
+		invitedUserId: string;
+		invitedBy: string;
+		invitationId: string
+	}]
 }
 
 /**

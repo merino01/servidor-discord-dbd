@@ -1,6 +1,7 @@
 import {
 	SlashCommandOptions,
-	SubCommandOptions
+	SubCommandOptions,
+	SubCommandGroupOptions
 } from "@types"
 import { botLogger } from "@core/logger"
 
@@ -28,9 +29,30 @@ export function registerCommand (CommandClass: any, options: SlashCommandOptions
 }
 
 /**
- * Registra un subcomando
+ * Registra un grupo de subcomandos
  */
-export function registerSubCommand (CommandClass: any, methodName: string, options: SubCommandOptions): void {
+export function registerSubCommandGroup (
+	CommandClass: any,
+	options: SubCommandGroupOptions
+): void {
+	if (!CommandClass.__subCommandGroups) {
+		CommandClass.__subCommandGroups = []
+	}
+
+	CommandClass.__subCommandGroups.push({
+		name: options.name,
+		description: options.description
+	})
+}
+
+/**
+ * Registra un subcomando (puede estar dentro de un grupo)
+ */
+export function registerSubCommand (
+	CommandClass: any,
+	methodName: string,
+	options: SubCommandOptions & { group?: string }
+): void {
 	if (!CommandClass.__subCommands) {
 		CommandClass.__subCommands = []
 	}
@@ -38,6 +60,7 @@ export function registerSubCommand (CommandClass: any, methodName: string, optio
 	CommandClass.__subCommands.push({
 		name: options.name,
 		description: options.description,
+		group: options.group,
 		methodName,
 		options: options.options || []
 	})
@@ -48,6 +71,13 @@ export function registerSubCommand (CommandClass: any, methodName: string, optio
  */
 export function getCommandMetadata (target: any): SlashCommandOptions | undefined {
 	return target.__commandOptions
+}
+
+/**
+ * Obtiene los grupos de subcomandos
+ */
+export function getSubCommandGroupsMetadata (target: any): any[] {
+	return target.__subCommandGroups || []
 }
 
 /**

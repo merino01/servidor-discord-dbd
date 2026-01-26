@@ -10,6 +10,7 @@ import "./modules/channel-formats"
 import "./modules/auto-messages"
 import "./modules/stats"
 import "./modules/echo"
+import "./modules/clanes"
 
 export async function startBot () {
 	const config = loadConfig()

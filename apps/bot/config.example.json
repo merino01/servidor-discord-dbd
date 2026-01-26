@@ -9,13 +9,6 @@
 		"prefix": "!"
 	},
 	"features": {
-		"triggers": {
-			"enabled": true,
-			"maxPerGuild": 100
-		},
-		"autoMod": {
-			"enabled": true
-		},
 		"stats": {
 			"enabled": true,
 			"messageXp": 5,
