@@ -2,8 +2,13 @@ import { CronJob } from "cron"
 import { BotInstance } from "@/core/bot-instance"
 import { ClanService } from "../services/clan.service"
 import { getConfig } from "@/core/config"
+import { botLogger } from "@/core/logger"
+
+const cronLogger = botLogger.child("cron")
 
 async function ajustMemberRolesCron () {
+	cronLogger.info("Ejecutando cron: ajustMemberRolesCron")
+
 	const bot = BotInstance.getOrNull()
 	if (!bot) {
 		return
@@ -25,11 +30,9 @@ async function ajustMemberRolesCron () {
 		const hasClanRole = userRoles.some((role) => clanRoles.includes(role.id))
 
 		if (dbClan && !hasClanRole) {
-			await clanService.removeMember(dbClan._id.toString(), member.id, "system", false)
+			await clanService.addMember(dbClan._id.toString(), member.id, "system")
 			continue
-		}
-
-		if (!dbClan && hasClanRole) {
+		} else if (!dbClan && hasClanRole) {
 			await member.roles.remove(clanRoles, "El usuario no pertenece a ningún clan en la base de datos")
 			continue
 		}

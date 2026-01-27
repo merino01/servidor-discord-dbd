@@ -1,6 +1,7 @@
 import {
 	ActionRowBuilder,
 	EmbedBuilder,
+	Guild,
 	MessageFlags,
 	PermissionFlagsBits,
 	StringSelectMenuBuilder,
@@ -444,6 +445,68 @@ export class ClanModCommand extends BaseCommand {
 		}
 	}
 
+	async miembros (context: CommandContext): Promise<void> {
+		const { interaction } = context
+
+		if (!interaction.guildId) {
+			await interaction.reply({
+				content: "❌ Este comando solo funciona en servidores.",
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
+
+		try {
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+			const rol = interaction.options.getRole("rol", true)
+
+			const clan = await this.service.getClanByRole(interaction.guild!.id, rol.id)
+			if (!clan) {
+				await interaction.editReply({
+					embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
+				})
+			}
+
+			const memberList = await this.buildMemberList(
+				clan!.members,
+				clan!.leaderIds,
+				interaction.guild!
+			)
+
+			interaction.editReply({
+				embeds: [
+					new EmbedBuilder()
+						.setTitle(`Miembros del clan ${clan?.icon} ${clan?.name}`)
+						.setDescription(memberList || "No hay miembros en este clan.")
+						.setColor(0x0099ff)
+				]
+			})
+		} catch (error) {
+			clanLogger.error("Error al listar miembros del clan:", error)
+			await interaction.editReply({
+				content: "❌ Error al listar los miembros del clan."
+			})
+		}
+	}
+
+	private async buildMemberList (members: string[], leaders: string[], guild: Guild): Promise<string> {
+		let memberList = ""
+		for (const userId of members) {
+			const member = await guild.members.fetch(userId)
+			if (!member) {
+				continue
+			}
+
+			if (leaders.includes(userId)) {
+				memberList += `- <@${member.user.id}> (${member.user.tag}) 👑 Líder\n`
+				continue
+			}
+			memberList += `- <@${member.user.id}> (${member.user.tag})\n`
+		}
+		return memberList
+	}
+
 	private buildListEmbed (clans: IClan[], verEliminados: boolean): EmbedBuilder {
 		const titulo = verEliminados
 			? `🗁️ Clanes eliminados (${clans.length})`
@@ -637,6 +700,19 @@ registerSubCommand(ClanModCommand, "info", {
 			description: "Incluir clanes eliminados en la información",
 			type: OptionType.BOOLEAN,
 			required: false
+		}
+	]
+})
+
+registerSubCommand(ClanModCommand, "miembros", {
+	name: "miembros",
+	description: "Muestra los miembros de un clan",
+	options: [
+		{
+			name: "rol",
+			description: "Rol del clan",
+			type: OptionType.ROLE,
+			required: true
 		}
 	]
 })
