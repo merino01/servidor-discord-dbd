@@ -12,6 +12,9 @@ export interface IClan extends Document {
 	members: string[]
 	createdAt: Date
 	createdBy: string
+	isActive: boolean
+	deletedAt?: Date
+	deletedBy?: string
 }
 
 const ClanSchema = new Schema<IClan>({
@@ -24,7 +27,10 @@ const ClanSchema = new Schema<IClan>({
 	voiceChannelIds: [{ type: String, required: true }],
 	members: [{ type: String }],
 	createdAt: { type: Date, default: Date.now },
-	createdBy: { type: String, required: true }
+	createdBy: { type: String, required: true },
+	isActive: { type: Boolean, default: true },
+	deletedAt: { type: Date },
+	deletedBy: { type: String }
 })
 
 ClanSchema.index({ guildId: 1, name: 1 }, { unique: true })

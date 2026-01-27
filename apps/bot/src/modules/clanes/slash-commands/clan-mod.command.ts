@@ -1,8 +1,19 @@
+import {
+	ActionRowBuilder,
+	EmbedBuilder,
+	MessageFlags,
+	PermissionFlagsBits,
+	StringSelectMenuBuilder,
+	StringSelectMenuOptionBuilder
+} from "discord.js"
 import { registerCommand, registerSubCommand } from "@core/decorators/command.decorators"
 import { CommandContext, OptionType } from "@types"
 import { BaseCommand } from "@/core/base/base-command"
+import { ClanModel, IClan } from "@org/mongo"
 import { ClanService } from "../services/clan.service"
-import { EmbedBuilder, MessageFlags, PermissionFlagsBits } from "discord.js"
+import { botLogger } from "@/core/logger"
+
+const clanLogger = botLogger.child("clanes")
 
 export class ClanModCommand extends BaseCommand {
 	protected service = ClanService.getInstance()
@@ -388,6 +399,87 @@ export class ClanModCommand extends BaseCommand {
 			})
 		}
 	}
+
+	async info (context: CommandContext): Promise<void> {
+		const { interaction } = context
+
+		if (!interaction.guildId) {
+			await interaction.reply({
+				content: "❌ Este comando solo funciona en servidores.",
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
+
+		const verEliminados = interaction.options.getBoolean("ver-eliminados") ?? false
+
+		try {
+			const clans = await ClanModel.find({
+				guildId: interaction.guildId,
+				isActive: !verEliminados
+			}).sort({ createdAt: -1 })
+
+			if (clans.length === 0) {
+				const mensaje = verEliminados
+					? "🗁️ No hay clanes eliminados en este servidor."
+					: "📋 No hay clanes configurados en este servidor."
+				await interaction.reply({ content: mensaje, flags: MessageFlags.Ephemeral })
+				return
+			}
+
+			const embed = this.buildListEmbed(clans, verEliminados)
+			const row = this.buildSelectMenuRow(clans, verEliminados)
+
+			await interaction.reply({
+				embeds: [embed],
+				components: [row],
+				flags: MessageFlags.Ephemeral
+			})
+		} catch (error) {
+			clanLogger.error("Error al listar clanes:", error)
+			await interaction.reply({
+				content: "❌ Error al listar los clanes.",
+				flags: MessageFlags.Ephemeral
+			})
+		}
+	}
+
+	private buildListEmbed (clans: IClan[], verEliminados: boolean): EmbedBuilder {
+		const titulo = verEliminados
+			? `🗁️ Clanes eliminados (${clans.length})`
+			: `📋 Clanes del servidor (${clans.length})`
+
+		const embed = new EmbedBuilder()
+			.setColor(verEliminados ? 0xff0000 : 0x0099ff)
+			.setTitle(titulo)
+			.setDescription("Selecciona un clan del menú para ver sus detalles")
+
+		if (clans.length > 25) {
+			embed.setFooter({ text: `Mostrando 25 de ${clans.length}` })
+		}
+
+		return embed
+	}
+
+	private buildSelectMenuOptions (clans: IClan[], verEliminados: boolean): StringSelectMenuOptionBuilder[] {
+		return clans.slice(0, 25).map((c) => new StringSelectMenuOptionBuilder()
+			.setLabel(`${c.icon} ${c.name}`)
+			.setDescription(`${c.icon} ${c.name}`)
+			.setValue(c._id.toString()))
+	}
+
+	private buildSelectMenuRow (
+		clans: IClan[],
+		verEliminados: boolean
+	): ActionRowBuilder<StringSelectMenuBuilder> {
+		const options = this.buildSelectMenuOptions(clans, verEliminados)
+		const selectMenu = new StringSelectMenuBuilder()
+			.setCustomId("clan_select")
+			.setPlaceholder("Selecciona un clan...")
+			.addOptions(options)
+
+		return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)
+	}
 }
 
 registerCommand(ClanModCommand, {
@@ -532,6 +624,19 @@ registerSubCommand(ClanModCommand, "eliminarCanal", {
 			description: "Rol del clan",
 			type: OptionType.ROLE,
 			required: true
+		}
+	]
+})
+
+registerSubCommand(ClanModCommand, "info", {
+	name: "info",
+	description: "Muestra información de los clanes del servidor",
+	options: [
+		{
+			name: "ver-eliminados",
+			description: "Incluir clanes eliminados en la información",
+			type: OptionType.BOOLEAN,
+			required: false
 		}
 	]
 })

@@ -327,7 +327,10 @@ export class ClanService {
 		try {
 			await this.cleanupClanResources({ guild, clan, config })
 
-			await ClanModel.findByIdAndDelete(clanId)
+			clan.isActive = false
+			clan.deletedAt = new Date()
+			clan.deletedBy = deletedBy
+			await clan.save()
 			await ClanInvitationModel.deleteMany({ clanId })
 
 			clanLogger.info(`Clan eliminado: ${clan.name} (${clanId})`)

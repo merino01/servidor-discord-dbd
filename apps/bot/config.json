@@ -8,9 +8,6 @@
 		"ownerId": "346667985521475595",
 		"prefix": "!"
 	},
-	"database": {
-		"mongoUri": "mongodb://admin:aC5ldUtdHddQ@localhost:27017/discord-bot?authSource=admin"
-	},
 	"features": {
 		"stats": {
 			"enabled": true,
