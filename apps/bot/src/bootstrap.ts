@@ -4,6 +4,7 @@ import { BotInstance } from "@/core/bot-instance"
 import { connectMongo } from "@org/mongo"
 
 import "./events"
+
 import "./modules/triggers"
 import "./modules/logs"
 import "./modules/channel-formats"

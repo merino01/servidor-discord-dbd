@@ -1,6 +1,6 @@
 import { Client, Collection } from "discord.js"
 import { ICommand } from "@types"
-import { getRegisteredCommands } from "./decorators/command.decorators"
+import { getRegisteredCommands } from "./command-register"
 import { botLogger } from "@core/logger"
 
 /**

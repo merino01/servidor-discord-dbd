@@ -2,7 +2,7 @@ import { BaseCommand } from "@/core/base/base-command"
 import {
 	registerCommand,
 	registerSubCommand
-} from "@core/decorators/command.decorators"
+} from "@/core/command-register"
 import { CommandContext, OptionType } from "@types"
 import {
 	EmbedBuilder,

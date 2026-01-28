@@ -1,4 +1,4 @@
-import { registerCommand, registerSubCommand } from "@core/decorators/command.decorators"
+import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext, OptionType } from "@types"
 import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ChannelType } from "discord.js"
 import { botLogger } from "@/core/logger"

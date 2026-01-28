@@ -1,4 +1,4 @@
-import { registerSubCommand } from "@core/decorators/command.decorators"
+import { registerSubCommand } from "@/core/command-register"
 import { ClanCommand } from "./clan.command"
 
 registerSubCommand(ClanCommand, "salir", {

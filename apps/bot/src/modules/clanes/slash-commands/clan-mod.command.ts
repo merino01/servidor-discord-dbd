@@ -7,7 +7,7 @@ import {
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder
 } from "discord.js"
-import { registerCommand, registerSubCommand } from "@core/decorators/command.decorators"
+import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext, OptionType } from "@types"
 import { BaseCommand } from "@/core/base/base-command"
 import { ClanModel, IClan } from "@org/mongo"

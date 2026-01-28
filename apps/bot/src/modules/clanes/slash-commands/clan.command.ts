@@ -1,5 +1,5 @@
 import { BaseCommand } from "@/core/base/base-command"
-import { registerCommand } from "@/core/decorators/command.decorators"
+import { registerCommand } from "@/core/command-register"
 import { EmbedBuilder, MessageFlags } from "discord.js"
 import { ClanService } from "../services/clan.service"
 import { CommandContext } from "@/core/types"

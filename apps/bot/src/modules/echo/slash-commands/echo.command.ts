@@ -1,5 +1,5 @@
 import { BaseCommand } from "@/core/base/base-command"
-import { registerCommand } from "@core/decorators/command.decorators"
+import { registerCommand } from "@/core/command-register"
 import { CommandContext, OptionType } from "@types"
 import {
 	PermissionFlagsBits,

@@ -7,7 +7,7 @@ import {
 	getCommandMetadata,
 	getSubCommandsMetadata,
 	getSubCommandGroupsMetadata
-} from "@core/decorators/command.decorators"
+} from "@/core/command-register"
 
 /**
  * Clase base para todos los comandos slash
