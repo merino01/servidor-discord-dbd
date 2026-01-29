@@ -1,37 +1,31 @@
-/* import { BaseCommand } from "@/core/base/base-command"
-import { registerSubCommand } from "@core/decorators/command.decorators"
-import { CommandContext, OptionType } from "@types"
-import { EmbedBuilder, MessageFlags } from "discord.js"
-import { botLogger } from "@/core/logger"
-import { ClanService } from "../services/clan.service"
+import { registerSubCommand, registerSubCommandGroup } from "@/core/command-register"
 import { ClanCommand } from "./clan.command"
 
-const clanLogger = botLogger.child("clanes")
+registerSubCommandGroup(ClanCommand, {
+	name: "lider",
+	description: "Comandos para líderes de clan"
+})
 
-export class ClanLeaderCommand extends ClanCommand {
-	private service = ClanService.getInstance()
+registerSubCommand(ClanCommand, "invitar", {
+	group: "lider",
+	name: "invitar",
+	description: "Invitar a un mimebro al clan"
+})
 
-	private buildSuccessEmbed (title: string, description: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0x00ff00)
-			.setTitle(`✅ ${title}`)
-			.setDescription(description)
-			.setTimestamp()
-	}
+registerSubCommand(ClanCommand, "expulsar", {
+	group: "lider",
+	name: "expulsar",
+	description: "Expulsar a un mimebro del clan"
+})
 
-	private buildErrorEmbed (error: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0xff0000)
-			.setTitle("❌ Error")
-			.setDescription(error)
-			.setTimestamp()
-	}
+registerSubCommand(ClanCommand, "info", {
+	group: "lider",
+	name: "info",
+	description: "Ver informacion del clan"
+})
 
-	// Aquí irán los comandos de líder:
-	// - invitar
-	// - expulsar (diferente del mod, solo para su clan)
-	// - info (solo para su clan)
-	// - miembros
-	// Aquí irán los registerSubCommand(ClanCommand, ...)
-}
-*/
+registerSubCommand(ClanCommand, "miembros", {
+	group: "lider",
+	name: "miembros",
+	description: "Ver miembros del clan"
+})

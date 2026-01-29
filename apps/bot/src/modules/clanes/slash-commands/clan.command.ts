@@ -65,6 +65,38 @@ export class ClanCommand extends BaseCommand {
 			})
 		}
 	}
+
+	async invitar (context: CommandContext): Promise<void> {
+		const { interaction } = context
+		await interaction.reply({
+			embeds: [this.buildErrorEmbed("Este comando está en desarrollo.")],
+			flags: MessageFlags.Ephemeral
+		})
+	}
+
+	async expulsar (context: CommandContext): Promise<void> {
+		const { interaction } = context
+		await interaction.reply({
+			embeds: [this.buildErrorEmbed("Este comando está en desarrollo.")],
+			flags: MessageFlags.Ephemeral
+		})
+	}
+
+	async info (context: CommandContext): Promise<void> {
+		const { interaction } = context
+		await interaction.reply({
+			embeds: [this.buildErrorEmbed("Este comando está en desarrollo.")],
+			flags: MessageFlags.Ephemeral
+		})
+	}
+
+	async miembros (context: CommandContext): Promise<void> {
+		const { interaction } = context
+		await interaction.reply({
+			embeds: [this.buildErrorEmbed("Este comando está en desarrollo.")],
+			flags: MessageFlags.Ephemeral
+		})
+	}
 }
 
 registerCommand(ClanCommand, {
