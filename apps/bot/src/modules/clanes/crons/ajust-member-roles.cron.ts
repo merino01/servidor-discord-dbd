@@ -1,14 +1,9 @@
-import { CronJob } from "cron"
 import { BotInstance } from "@/core/bot-instance"
 import { ClanService } from "../services/clan.service"
 import { getConfig } from "@/core/config"
-import { botLogger } from "@/core/logger"
-
-const cronLogger = botLogger.child("cron")
+import { scheduleCronJob } from "@/core/schedule-cron-job"
 
 async function ajustMemberRolesCron () {
-	cronLogger.info("Ejecutando cron: ajustMemberRolesCron")
-
 	const bot = BotInstance.getOrNull()
 	if (!bot) {
 		return
@@ -41,4 +36,4 @@ async function ajustMemberRolesCron () {
 
 }
 
-new CronJob("0 0 0 * * *", ajustMemberRolesCron, null, true, "Europe/Madrid")
+scheduleCronJob("0 0 0 * * *", ajustMemberRolesCron, "AjustarMiembrosYRolesDeClan")
