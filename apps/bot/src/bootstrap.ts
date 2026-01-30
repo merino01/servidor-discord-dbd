@@ -12,6 +12,7 @@ import "./modules/auto-messages"
 import "./modules/stats"
 import "./modules/echo"
 import "./modules/clanes"
+import "./modules/notificator"
 
 export async function startBot () {
 	const config = loadConfig()

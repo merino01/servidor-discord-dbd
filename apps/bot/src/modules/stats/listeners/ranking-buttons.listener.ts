@@ -1,7 +1,7 @@
 import { ButtonInteraction, EmbedBuilder } from "discord.js"
 import { UserStatsModel } from "@org/mongo"
-import { botLogger } from "../../../core/logger"
-import { registerButton } from "../../../core/components/component-registry"
+import { botLogger } from "@/core/logger"
+import { registerButton } from "@/core/components/component-registry"
 
 const statsLogger = botLogger.child("stats-buttons")
 

@@ -29,10 +29,6 @@ export interface BotEvents {
 	"member:ban": [guild: Guild, userId: string]
 	"member:unban": [guild: Guild, userId: string]
 
-	// Moderación
-	"moderation:timeout": [member: GuildMember, duration: number, reason?: string]
-	"moderation:kick": [member: GuildMember, reason?: string]
-
 	// Clanes
 	"clan:created": [data: { guildId: string; clanId: string; clanName: string; leaderId: string; createdBy: string }]
 	"clan:deleted": [data: { guildId: string; clanId: string; clanName: string; deletedBy: string }]
