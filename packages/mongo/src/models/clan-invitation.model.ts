@@ -37,4 +37,4 @@ const ClanInvitationSchema = new Schema<IClanInvitation>({
 ClanInvitationSchema.index({ clanId: 1, invitedUserId: 1, status: 1 })
 ClanInvitationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 
-export const ClanInvitationModel = model<IClanInvitation>("ClanInvitation", ClanInvitationSchema)
+export const ClanInvitationModel = model<IClanInvitation>("clan_invitation", ClanInvitationSchema)

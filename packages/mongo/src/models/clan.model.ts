@@ -36,4 +36,4 @@ const ClanSchema = new Schema<IClan>({
 ClanSchema.index({ guildId: 1, name: 1 }, { unique: true })
 ClanSchema.index({ guildId: 1, roleId: 1 })
 
-export const ClanModel = model<IClan>("Clan", ClanSchema)
+export const ClanModel = model<IClan>("clan", ClanSchema)

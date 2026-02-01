@@ -49,4 +49,4 @@ UserNotificationSchema.pre("save", function () {
 	}
 })
 
-export const UserNotificationModel = model<IUserNotification>("UserNotification", UserNotificationSchema)
+export const UserNotificationModel = model<IUserNotification>("user_notification", UserNotificationSchema)

@@ -34,4 +34,4 @@ const schema = new Schema<IChannelFormat>(
 // Índice único por canal
 schema.index({ guildId: 1, channelId: 1 }, { unique: true })
 
-export const ChannelFormatModel = model<IChannelFormat>("ChannelFormat", schema)
+export const ChannelFormatModel = model<IChannelFormat>("channel_format", schema)

@@ -32,4 +32,4 @@ ClanConfigSchema.pre("save", function () {
 	}
 })
 
-export const ClanConfigModel = model<IClanConfig>("ClanConfig", ClanConfigSchema)
+export const ClanConfigModel = model<IClanConfig>("clan_config", ClanConfigSchema)

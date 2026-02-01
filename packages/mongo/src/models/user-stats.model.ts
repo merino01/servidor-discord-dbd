@@ -63,4 +63,4 @@ UserStatsSchema.index({ guildId: 1, level: -1, xp: -1 })
 UserStatsSchema.index({ guildId: 1, messageCount: -1 })
 UserStatsSchema.index({ guildId: 1, voiceMinutes: -1 })
 
-export const UserStatsModel = model<IUserStats>("UserStats", UserStatsSchema)
+export const UserStatsModel = model<IUserStats>("user_stats", UserStatsSchema)

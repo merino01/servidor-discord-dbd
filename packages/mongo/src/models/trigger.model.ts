@@ -81,5 +81,5 @@ TriggerSchema.pre("save", function () {
 	}
 })
 
-export const TriggerModel = model<ITrigger>("Trigger", TriggerSchema)
+export const TriggerModel = model<ITrigger>("trigger", TriggerSchema)
 

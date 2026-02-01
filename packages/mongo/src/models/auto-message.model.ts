@@ -50,4 +50,4 @@ AutoMessageSchema.pre("save", function () {
 	}
 })
 
-export const AutoMessageModel = model<IAutoMessage>("AutoMessage", AutoMessageSchema)
+export const AutoMessageModel = model<IAutoMessage>("auto_message", AutoMessageSchema)

@@ -30,4 +30,4 @@ const CommandLogSchema = new Schema<ICommandLog>({
 CommandLogSchema.index({ guildId: 1, executedAt: -1 })
 CommandLogSchema.index({ userId: 1, executedAt: -1 })
 
-export const CommandLogModel = model<ICommandLog>("CommandLog", CommandLogSchema)
+export const CommandLogModel = model<ICommandLog>("command_log", CommandLogSchema)

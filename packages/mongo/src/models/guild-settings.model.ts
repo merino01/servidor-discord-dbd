@@ -27,4 +27,4 @@ const GuildSettingsSchema = new Schema<IGuildSettings>(
 	{ timestamps: true }
 )
 
-export const GuildSettingsModel = model<IGuildSettings>("GuildSettings", GuildSettingsSchema)
+export const GuildSettingsModel = model<IGuildSettings>("guild_settings", GuildSettingsSchema)

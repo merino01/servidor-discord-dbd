@@ -118,4 +118,4 @@ LogConfigSchema.pre("save", function () {
 	}
 })
 
-export const LogConfigModel = model<ILogConfig>("LogConfig", LogConfigSchema)
+export const LogConfigModel = model<ILogConfig>("log_config", LogConfigSchema)
