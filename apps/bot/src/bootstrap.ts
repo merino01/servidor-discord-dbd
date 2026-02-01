@@ -13,6 +13,7 @@ import "./modules/stats"
 import "./modules/echo"
 import "./modules/clanes"
 import "./modules/notificator"
+import "./modules/random-channel"
 
 export async function startBot () {
 	const config = loadConfig()
