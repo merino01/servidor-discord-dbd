@@ -1,6 +1,16 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand } from "@/core/command-register"
-import { EmbedBuilder, MessageFlags, User, ButtonBuilder, ButtonStyle, ActionRowBuilder } from "discord.js"
+import {
+	EmbedBuilder,
+	MessageFlags,
+	User,
+	ButtonBuilder,
+	ButtonStyle,
+	ActionRowBuilder,
+	ComponentType,
+	Message,
+	ButtonInteraction
+} from "discord.js"
 import { ClanService } from "../services/clan.service"
 import { CommandContext } from "@/core/types"
 import { IClan, IClanInvitation } from "@org/mongo"
@@ -314,6 +324,74 @@ export class ClanCommand extends BaseCommand {
 		return chunks
 	}
 
+	private buildMemberEmbed (clan: IClan, chunks: string[][], page: number): EmbedBuilder {
+		return new EmbedBuilder()
+			.setColor(0x5865f2)
+			.setTitle(`${clan.icon} Miembros de ${clan.name}`)
+			.setDescription(chunks[page].join("\n"))
+			.setFooter({
+				text: `Página ${page + 1}/${chunks.length} • Total: ${clan.members.length} miembros`
+			})
+			.setTimestamp()
+	}
+
+	private buildPaginationButtons (page: number, totalPages: number): ActionRowBuilder<ButtonBuilder> {
+		return new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId("prev_page")
+				.setLabel("◀ Anterior")
+				.setStyle(ButtonStyle.Primary)
+				.setDisabled(page === 0),
+			new ButtonBuilder()
+				.setCustomId("next_page")
+				.setLabel("Siguiente ▶")
+				.setStyle(ButtonStyle.Primary)
+				.setDisabled(page === totalPages - 1)
+		)
+	}
+
+	private async handlePaginationCollector (params: {
+		response: Message
+		userId: string
+		chunks: string[][]
+		clan: IClan
+		interaction: CommandContext["interaction"]
+	}): Promise<void> {
+		const { response, userId, chunks, clan, interaction } = params
+		let currentPage = 0
+		const collector = response.createMessageComponentCollector({
+			componentType: ComponentType.Button,
+			time: 300000
+		})
+
+		collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
+			if (buttonInteraction.user.id !== userId) {
+				await buttonInteraction.reply({
+					content: "Solo el líder que ejecutó el comando puede navegar por las páginas.",
+					flags: MessageFlags.Ephemeral
+				})
+				return
+			}
+
+			if (buttonInteraction.customId === "prev_page") {
+				currentPage = Math.max(0, currentPage - 1)
+			} else if (buttonInteraction.customId === "next_page") {
+				currentPage = Math.min(chunks.length - 1, currentPage + 1)
+			}
+
+			await buttonInteraction.update({
+				embeds: [this.buildMemberEmbed(clan, chunks, currentPage)],
+				components: [this.buildPaginationButtons(currentPage, chunks.length)]
+			})
+		})
+
+		collector.on("end", () => {
+			interaction.editReply({ components: [] }).catch(() => {
+				// Ignorar errores si el mensaje ya fue eliminado
+			})
+		})
+	}
+
 	async miembros (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
@@ -351,22 +429,25 @@ export class ClanCommand extends BaseCommand {
 			return
 		}
 
-		const embed = new EmbedBuilder()
-			.setColor(0x5865f2)
-			.setTitle(`${clan.icon} Miembros de ${clan.name}`)
-			.setDescription(chunks[0].join("\n"))
-			.setFooter({ text: `Total: ${clan.members.length} miembros` })
-			.setTimestamp()
+		const embed = this.buildMemberEmbed(clan, chunks, 0)
+		const buttons = this.buildPaginationButtons(0, chunks.length)
 
-		await interaction.editReply({ embeds: [embed] })
+		const response = await interaction.editReply({
+			embeds: [embed],
+			components: chunks.length > 1 ? [buttons] : []
+		})
 
-		for (let i = 1; i < chunks.length; i++) {
-			const followUpEmbed = new EmbedBuilder()
-				.setColor(0x5865f2)
-				.setDescription(chunks[i].join("\n"))
-
-			await interaction.followUp({ embeds: [followUpEmbed], flags: MessageFlags.Ephemeral })
+		if (chunks.length === 1) {
+			return
 		}
+
+		await this.handlePaginationCollector({
+			response,
+			userId,
+			chunks,
+			clan,
+			interaction
+		})
 	}
 }
 
