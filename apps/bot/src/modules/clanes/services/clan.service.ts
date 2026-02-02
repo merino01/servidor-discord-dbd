@@ -84,7 +84,7 @@ export class ClanService {
 			return { success: false, error: "El sistema de clanes no está configurado o está deshabilitado" }
 		}
 
-		const existingClan = await ClanModel.findOne({ guildId, name })
+		const existingClan = await ClanModel.findOne({ guildId, name, isActive: true })
 		if (existingClan) {
 			return { success: false, error: "Ya existe un clan con ese nombre" }
 		}
@@ -330,6 +330,8 @@ export class ClanService {
 			clan.isActive = false
 			clan.deletedAt = new Date()
 			clan.deletedBy = deletedBy
+			clan.members = []
+			clan.leaderIds = []
 			await clan.save()
 			await ClanInvitationModel.deleteMany({ clanId })
 
@@ -537,7 +539,7 @@ export class ClanService {
 			return `El clan ha alcanzado el límite de ${config.maxMembers} miembros`
 		}
 
-		const userClan = await ClanModel.findOne({ guildId: clan.guildId, members: userId })
+		const userClan = await ClanModel.findOne({ guildId: clan.guildId, members: userId, isActive: true })
 		if (userClan) {
 			return "El usuario ya pertenece a otro clan"
 		}
@@ -868,7 +870,7 @@ export class ClanService {
 			return `El clan ha alcanzado el límite de ${config.maxMembers} miembros`
 		}
 
-		const userClan = await ClanModel.findOne({ guildId: clan.guildId, members: userId })
+		const userClan = await ClanModel.findOne({ guildId: clan.guildId, members: userId, isActive: true })
 		if (userClan) {
 			return "El usuario ya pertenece a otro clan"
 		}
@@ -1016,7 +1018,7 @@ export class ClanService {
 	}
 
 	async getClanByMember (guildId: string, userId: string): Promise<IClan | null> {
-		return await ClanModel.findOne({ guildId, members: userId })
+		return await ClanModel.findOne({ guildId, members: userId, isActive: true })
 	}
 
 	async getClanById (clanId: string): Promise<IClan | null> {
@@ -1024,11 +1026,11 @@ export class ClanService {
 	}
 
 	async getClanByRole (guildId: string, roleId: string): Promise<IClan | null> {
-		return await ClanModel.findOne({ guildId, roleId })
+		return await ClanModel.findOne({ guildId, roleId, isActive: true })
 	}
 
 	async getGuildClans (guildId: string): Promise<IClan[]> {
-		return await ClanModel.find({ guildId }).sort({ createdAt: -1 })
+		return await ClanModel.find({ guildId, isActive: true }).sort({ createdAt: -1 })
 	}
 
 	async getAllClanRoles (guildId: string): Promise<string[]> {
