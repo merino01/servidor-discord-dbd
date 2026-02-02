@@ -1,4 +1,4 @@
-import { loadConfig } from "@core/config"
+import { getConfig } from "@core/config"
 import { BotClient } from "@/core/bot-client"
 import { BotInstance } from "@/core/bot-instance"
 import { connectMongo } from "@org/mongo"
@@ -16,9 +16,8 @@ import "./modules/notificator"
 import "./modules/random-channel"
 
 export async function startBot () {
-	const config = loadConfig()
-
 	await connectMongo()
+	const config = getConfig()
 
 	const client = new BotClient()
 	await client.start(config.discord.token, config.discord.guildId)

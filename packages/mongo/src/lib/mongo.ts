@@ -1,6 +1,8 @@
 import mongoose from "mongoose"
+import { getConfig } from "@org/config"
 import { logger } from "@org/logger"
-import config from "../../config.json" with { type: "json"}
+
+const config = getConfig()
 
 const mongoLogger = logger.child("mongo")
 
@@ -15,7 +17,7 @@ let isConnected = false
  * Obtiene la URI de MongoDB desde variables de entorno
  */
 function getMongoUri (): string {
-	const uri = process.env.MONGO_URI || process.env.MONGODB_URI || config.mongo_uri
+	const uri = process.env.MONGO_URI || process.env.MONGODB_URI || config.databases.mongo.uri
 
 	if (!uri) {
 		throw new Error(
@@ -31,13 +33,13 @@ function getMongoUri (): string {
  * Conecta a MongoDB
  * Si no se proporciona URI, se lee de la variable de entorno MONGO_URI o MONGODB_URI
  */
-export async function connectMongo (config?: MongoConfig): Promise<void> {
+export async function connectMongo (_config?: MongoConfig): Promise<void> {
 	if (isConnected) {
 		mongoLogger.debug("Ya conectado a MongoDB")
 		return
 	}
 
-	const uri = config?.uri || getMongoUri()
+	const uri = _config?.uri || getMongoUri()
 
 	try {
 		await mongoose.connect(uri, {
@@ -45,7 +47,7 @@ export async function connectMongo (config?: MongoConfig): Promise<void> {
 			minPoolSize: 2,
 			serverSelectionTimeoutMS: 5000,
 			socketTimeoutMS: 45000,
-			...config?.options
+			..._config?.options
 		})
 
 		isConnected = true
