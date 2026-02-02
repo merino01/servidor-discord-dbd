@@ -5,7 +5,12 @@ import {
 	MessageFlags,
 	PermissionFlagsBits,
 	StringSelectMenuBuilder,
-	StringSelectMenuOptionBuilder
+	StringSelectMenuOptionBuilder,
+	ComponentType,
+	ButtonBuilder,
+	ButtonStyle,
+	Message,
+	ButtonInteraction
 } from "discord.js"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext, OptionType } from "@types"
@@ -429,7 +434,7 @@ export class ClanModCommand extends BaseCommand {
 			}
 
 			const embed = this.buildListEmbed(clans, verEliminados)
-			const row = this.buildSelectMenuRow(clans, verEliminados)
+			const row = this.buildSelectMenuRow(clans)
 
 			await interaction.reply({
 				embeds: [embed],
@@ -445,10 +450,48 @@ export class ClanModCommand extends BaseCommand {
 		}
 	}
 
+	private async processMembersPagination (params: {
+		interaction: CommandContext["interaction"]
+		guild: Guild
+		clan: IClan
+	}): Promise<void> {
+		const { interaction, guild, clan } = params
+		const memberList = await this.buildMemberList(clan.members, clan.leaderIds, guild)
+
+		const chunks = this.chunkArray(memberList, 20)
+
+		if (chunks.length === 0) {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed("El clan no tiene miembros.")]
+			})
+			return
+		}
+
+		const embed = this.buildModMemberEmbed(clan, chunks, 0)
+		const buttons = this.buildModPaginationButtons(0, chunks.length)
+
+		const response = await interaction.editReply({
+			embeds: [embed],
+			components: chunks.length > 1 ? [buttons] : []
+		})
+
+		if (chunks.length === 1) {
+			return
+		}
+
+		await this.handleModPaginationCollector({
+			response,
+			userId: interaction.user.id,
+			chunks,
+			clan,
+			interaction
+		})
+	}
+
 	async miembros (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
-		if (!interaction.guildId) {
+		if (!interaction.guildId || !interaction.guild) {
 			await interaction.reply({
 				content: "❌ Este comando solo funciona en servidores.",
 				flags: MessageFlags.Ephemeral
@@ -461,27 +504,15 @@ export class ClanModCommand extends BaseCommand {
 
 			const rol = interaction.options.getRole("rol", true)
 
-			const clan = await this.service.getClanByRole(interaction.guild!.id, rol.id)
+			const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
 			if (!clan) {
 				await interaction.editReply({
 					embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
 				})
+				return
 			}
 
-			const memberList = await this.buildMemberList(
-				clan!.members,
-				clan!.leaderIds,
-				interaction.guild!
-			)
-
-			interaction.editReply({
-				embeds: [
-					new EmbedBuilder()
-						.setTitle(`Miembros del clan ${clan?.icon} ${clan?.name}`)
-						.setDescription(memberList || "No hay miembros en este clan.")
-						.setColor(0x0099ff)
-				]
-			})
+			await this.processMembersPagination({ interaction, guild: interaction.guild, clan })
 		} catch (error) {
 			clanLogger.error("Error al listar miembros del clan:", error)
 			await interaction.editReply({
@@ -490,21 +521,94 @@ export class ClanModCommand extends BaseCommand {
 		}
 	}
 
-	private async buildMemberList (members: string[], leaders: string[], guild: Guild): Promise<string> {
-		let memberList = ""
+	private async buildMemberList (members: string[], leaders: string[], guild: Guild): Promise<string[]> {
+		const memberList: string[] = []
 		for (const userId of members) {
 			const member = await guild.members.fetch(userId)
 			if (!member) {
 				continue
 			}
 
-			if (leaders.includes(userId)) {
-				memberList += `- <@${member.user.id}> (${member.user.tag}) 👑 Líder\n`
-				continue
-			}
-			memberList += `- <@${member.user.id}> (${member.user.tag})\n`
+			const badge = leaders.includes(userId) ? "👑" : "👤"
+			memberList.push(`${badge} <@${member.user.id}> (${member.user.tag})`)
 		}
 		return memberList
+	}
+
+	private chunkArray<T> (array: T[], size: number): T[][] {
+		const chunks: T[][] = []
+		for (let i = 0; i < array.length; i += size) {
+			chunks.push(array.slice(i, i + size))
+		}
+		return chunks
+	}
+
+	private buildModMemberEmbed (clan: IClan, chunks: string[][], page: number): EmbedBuilder {
+		return new EmbedBuilder()
+			.setColor(0x0099ff)
+			.setTitle(`Miembros del clan ${clan.icon} ${clan.name}`)
+			.setDescription(chunks[page].join("\n"))
+			.setFooter({
+				text: `Página ${page + 1}/${chunks.length} • Total: ${clan.members.length} miembros`
+			})
+			.setTimestamp()
+	}
+
+	private buildModPaginationButtons (page: number, totalPages: number): ActionRowBuilder<ButtonBuilder> {
+		return new ActionRowBuilder<ButtonBuilder>().addComponents(
+			new ButtonBuilder()
+				.setCustomId("prev_page_mod")
+				.setLabel("◀ Anterior")
+				.setStyle(ButtonStyle.Primary)
+				.setDisabled(page === 0),
+			new ButtonBuilder()
+				.setCustomId("next_page_mod")
+				.setLabel("Siguiente ▶")
+				.setStyle(ButtonStyle.Primary)
+				.setDisabled(page === totalPages - 1)
+		)
+	}
+
+	private async handleModPaginationCollector (params: {
+		response: Message
+		userId: string
+		chunks: string[][]
+		clan: IClan
+		interaction: CommandContext["interaction"]
+	}): Promise<void> {
+		const { response, userId, chunks, clan, interaction } = params
+		let currentPage = 0
+		const collector = response.createMessageComponentCollector({
+			componentType: ComponentType.Button,
+			time: 300000
+		})
+
+		collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
+			if (buttonInteraction.user.id !== userId) {
+				await buttonInteraction.reply({
+					content: "Solo el moderador que ejecutó el comando puede navegar por las páginas.",
+					flags: MessageFlags.Ephemeral
+				})
+				return
+			}
+
+			if (buttonInteraction.customId === "prev_page_mod") {
+				currentPage = Math.max(0, currentPage - 1)
+			} else if (buttonInteraction.customId === "next_page_mod") {
+				currentPage = Math.min(chunks.length - 1, currentPage + 1)
+			}
+
+			await buttonInteraction.update({
+				embeds: [this.buildModMemberEmbed(clan, chunks, currentPage)],
+				components: [this.buildModPaginationButtons(currentPage, chunks.length)]
+			})
+		})
+
+		collector.on("end", () => {
+			interaction.editReply({ components: [] }).catch(() => {
+				// Ignorar errores si el mensaje ya fue eliminado
+			})
+		})
 	}
 
 	private buildListEmbed (clans: IClan[], verEliminados: boolean): EmbedBuilder {
@@ -524,18 +628,15 @@ export class ClanModCommand extends BaseCommand {
 		return embed
 	}
 
-	private buildSelectMenuOptions (clans: IClan[], verEliminados: boolean): StringSelectMenuOptionBuilder[] {
+	private buildSelectMenuOptions (clans: IClan[]): StringSelectMenuOptionBuilder[] {
 		return clans.slice(0, 25).map((c) => new StringSelectMenuOptionBuilder()
 			.setLabel(`${c.icon} ${c.name}`)
 			.setDescription(`${c.icon} ${c.name}`)
 			.setValue(c._id.toString()))
 	}
 
-	private buildSelectMenuRow (
-		clans: IClan[],
-		verEliminados: boolean
-	): ActionRowBuilder<StringSelectMenuBuilder> {
-		const options = this.buildSelectMenuOptions(clans, verEliminados)
+	private buildSelectMenuRow (clans: IClan[]): ActionRowBuilder<StringSelectMenuBuilder> {
+		const options = this.buildSelectMenuOptions(clans)
 		const selectMenu = new StringSelectMenuBuilder()
 			.setCustomId("clan_select")
 			.setPlaceholder("Selecciona un clan...")
