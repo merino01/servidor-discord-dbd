@@ -372,5 +372,5 @@ export class ClanCommand extends BaseCommand {
 
 registerCommand(ClanCommand, {
 	name: "clan",
-	description: "Gestión de clanes del staff"
+	description: "Gestión de clanes"
 })

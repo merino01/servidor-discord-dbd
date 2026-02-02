@@ -199,7 +199,7 @@ export class LogsCommand extends BaseCommand {
 registerCommand(LogsCommand, {
 	name: "logs",
 	description: "Configura el sistema de logs del servidor",
-	permissions: PermissionFlagsBits.ManageGuild,
+	permissions: PermissionFlagsBits.Administrator,
 	guildOnly: true
 })
 

@@ -578,7 +578,7 @@ export class AutoMessageCommand extends BaseCommand {
 registerCommand(AutoMessageCommand, {
 	name: "automensaje",
 	description: "Gestiona los mensajes automáticos del servidor",
-	permissions: PermissionFlagsBits.ManageGuild,
+	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages,
 	guildOnly: true
 })
 

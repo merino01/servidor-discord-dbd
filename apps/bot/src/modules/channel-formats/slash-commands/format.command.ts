@@ -403,7 +403,7 @@ export class FormatCommand extends BaseCommand {
 registerCommand(FormatCommand, {
 	name: "formato",
 	description: "Configura formatos de mensajes para canales",
-	permissions: PermissionFlagsBits.ManageChannels,
+	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages,
 	guildOnly: true
 })
 
