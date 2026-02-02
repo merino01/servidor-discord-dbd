@@ -16,5 +16,10 @@
 			"messageCooldownMs": 60000,
 			"levelUpNotificationChannelId": ""
 		}
+	},
+	"databases": {
+		"mongo": {
+			"uri": "mongodb://usuario:contraseña@localhost:27017/discord-bot?authSource=admin"
+		}
 	}
 }
