@@ -256,7 +256,7 @@ export class ClanCommand extends BaseCommand {
 			return
 		}
 
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+		await interaction.deferReply()
 
 		const userId = interaction.user.id
 		const guildId = interaction.guild.id
@@ -325,7 +325,7 @@ export class ClanCommand extends BaseCommand {
 			return
 		}
 
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+		await interaction.deferReply()
 
 		const userId = interaction.user.id
 		const guildId = interaction.guild.id

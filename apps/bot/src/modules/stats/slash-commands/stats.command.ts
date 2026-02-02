@@ -194,7 +194,7 @@ export class StatsCommand extends BaseCommand {
 	async perfil (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+		await interaction.deferReply()
 
 		const targetUser = interaction.options.getUser("usuario") ?? interaction.user
 
@@ -232,7 +232,7 @@ export class StatsCommand extends BaseCommand {
 	async ranking (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+		await interaction.deferReply()
 
 		const rankingType = "xp"
 		const guildId = interaction.guildId
