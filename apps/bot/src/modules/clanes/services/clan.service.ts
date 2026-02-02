@@ -143,7 +143,7 @@ export class ClanService {
 	}): Promise<{ textChannel: TextChannel; voiceChannel: VoiceChannel }> {
 		const textPerms = this.getChannelPermissions(guild.id, role.id, "text")
 		const textChannel = await guild.channels.create({
-			name: `【${icon}】 ${clanName}`,
+			name: `【${icon}】${clanName}`,
 			type: ChannelType.GuildText,
 			parent: category.id,
 			permissionOverwrites: textPerms
@@ -187,20 +187,113 @@ export class ClanService {
 		icon: string
 		leaderId: string
 		createdBy: string
+		roleId?: string
+		textChannelIds?: string[]
+		voiceChannelIds?: string[]
+		maxMembers?: number
+		maxVoiceChannels?: number
+		roleColor?: number
+		migracion?: boolean
 	}): Promise<{ success: boolean; clan?: IClan; error?: string }> {
 		const validation = await this.validateClanCreation(params.guildId, params.name)
 		if (!validation.success || !validation.guild || !validation.config) {
 			return { success: false, error: validation.error }
 		}
 
+		// Si es migración, usar recursos existentes
+		if (params.migracion && params.roleId && params.textChannelIds && params.voiceChannelIds) {
+			return await this.migrateClan(
+				{
+					guildId: params.guildId,
+					name: params.name,
+					icon: params.icon,
+					leaderId: params.leaderId,
+					createdBy: params.createdBy,
+					roleId: params.roleId,
+					textChannelIds: params.textChannelIds,
+					voiceChannelIds: params.voiceChannelIds,
+					maxMembers: params.maxMembers,
+					maxVoiceChannels: params.maxVoiceChannels,
+					roleColor: params.roleColor
+				},
+				validation.config
+			)
+		}
+
+		// Si no es migración, crear recursos normalmente
+		return await this.createNewClan(params, validation.guild, validation.config)
+	}
+
+	private async migrateClan (
+		params: {
+			guildId: string
+			name: string
+			icon: string
+			leaderId: string
+			createdBy: string
+			roleId: string
+			textChannelIds: string[]
+			voiceChannelIds: string[]
+			maxMembers?: number
+			maxVoiceChannels?: number
+			roleColor?: number
+		},
+		config: IClanConfig
+	): Promise<{ success: boolean; clan?: IClan; error?: string }> {
+		try {
+			const clan = await ClanModel.create({
+				guildId: params.guildId,
+				name: params.name,
+				icon: params.icon,
+				leaderIds: [params.leaderId],
+				roleId: params.roleId,
+				textChannelIds: params.textChannelIds,
+				voiceChannelIds: params.voiceChannelIds,
+				members: [params.leaderId],
+				createdBy: params.createdBy,
+				isActive: true,
+				maxMembers: params.maxMembers ?? config.maxMembers,
+				maxVoiceChannels: params.maxVoiceChannels ?? config.maxExtraVoiceChannels + 1,
+				roleColor: params.roleColor
+			})
+
+			clanLogger.info(`Clan migrado: ${params.name} en guild ${params.guildId}`)
+
+			botEvents.emit("clan:created", {
+				guildId: params.guildId,
+				clanId: clan._id.toString(),
+				clanName: params.name,
+				leaderId: params.leaderId,
+				createdBy: params.createdBy
+			})
+
+			return { success: true, clan }
+		} catch (error) {
+			clanLogger.error("Error migrando clan:", error)
+			return { success: false, error: "Error al migrar el clan" }
+		}
+	}
+
+	private async createNewClan (
+		params: {
+			guildId: string
+			name: string
+			icon: string
+			leaderId: string
+			createdBy: string
+			roleColor?: number
+		},
+		guild: Guild,
+		config: IClanConfig
+	): Promise<{ success: boolean; clan?: IClan; error?: string }> {
 		let role: Role | null = null
 		let textChannel: TextChannel | null = null
 		let voiceChannel: VoiceChannel | null = null
 
 		try {
 			const resources = await this.createClanResources({
-				guild: validation.guild,
-				config: validation.config,
+				guild,
+				config,
 				clanName: params.name,
 				icon: params.icon,
 				leaderId: params.leaderId
@@ -218,7 +311,10 @@ export class ClanService {
 				textChannelIds: [textChannel.id],
 				voiceChannelIds: [voiceChannel.id],
 				members: [params.leaderId],
-				createdBy: params.createdBy
+				createdBy: params.createdBy,
+				maxMembers: config.maxMembers,
+				maxVoiceChannels: config.maxExtraVoiceChannels + 1,
+				roleColor: params.roleColor
 			})
 
 			clanLogger.info(`Clan creado: ${params.name} en guild ${params.guildId}`)
@@ -484,7 +580,7 @@ export class ClanService {
 			return { success: false, error: "Configuración de clanes no encontrada" }
 		}
 
-		const validationError = this.validateExtraChannel(clan, config)
+		const validationError = this.validateExtraChannel(clan)
 		if (validationError) {
 			return { success: false, error: validationError }
 		}
@@ -528,15 +624,14 @@ export class ClanService {
 
 	private async validateAddMember (
 		clan: IClan,
-		userId: string,
-		config: IClanConfig
+		userId: string
 	): Promise<string | null> {
 		if (clan.members.includes(userId)) {
 			return "El usuario ya es miembro del clan"
 		}
 
-		if (clan.members.length >= config.maxMembers) {
-			return `El clan ha alcanzado el límite de ${config.maxMembers} miembros`
+		if (clan.members.length >= clan.maxMembers) {
+			return `El clan ha alcanzado el límite de ${clan.maxMembers} miembros`
 		}
 
 		const userClan = await ClanModel.findOne({ guildId: clan.guildId, members: userId, isActive: true })
@@ -583,7 +678,7 @@ export class ClanService {
 			return { success: false, error: "Configuración de clanes no encontrada" }
 		}
 
-		const validationError = await this.validateAddMember(clan, userId, config)
+		const validationError = await this.validateAddMember(clan, userId)
 		if (validationError) {
 			return { success: false, error: validationError }
 		}
@@ -652,12 +747,10 @@ export class ClanService {
 	}
 
 	private validateExtraChannel (
-		clan: IClan,
-		config: IClanConfig
+		clan: IClan
 	): string | null {
-		const maxChannels = config.maxExtraVoiceChannels + 1
-		if (clan.voiceChannelIds.length >= maxChannels) {
-			return `El clan ha alcanzado el límite de ${config.maxExtraVoiceChannels} canales extra`
+		if (clan.voiceChannelIds.length >= clan.maxVoiceChannels) {
+			return `El clan ha alcanzado el límite de ${clan.maxVoiceChannels} canales de voz`
 		}
 		return null
 	}
@@ -1040,5 +1133,50 @@ export class ClanService {
 
 	async getConfig (guildId: string) {
 		return await ClanConfigModel.findOne({ guildId })
+	}
+
+	async updateClanConfig (params: {
+		clanId: string
+		maxMembers?: number
+		maxVoiceChannels?: number
+		roleColor?: number
+	}): Promise<{ success: boolean; clan?: IClan; error?: string }> {
+		try {
+			const clan = await ClanModel.findById(params.clanId)
+			if (!clan) {
+				return { success: false, error: "Clan no encontrado" }
+			}
+
+			if (params.maxMembers !== undefined) {
+				clan.maxMembers = params.maxMembers
+			}
+			if (params.maxVoiceChannels !== undefined) {
+				clan.maxVoiceChannels = params.maxVoiceChannels
+			}
+			if (params.roleColor !== undefined) {
+				clan.roleColor = params.roleColor
+
+				// Actualizar el color del rol en Discord
+				const client = BotInstance.get()
+				const guild = client?.guilds.cache.get(clan.guildId)
+				if (guild) {
+					const role = guild.roles.cache.get(clan.roleId)
+					if (role) {
+						await role.setColor(params.roleColor).catch((e) => {
+							clanLogger.error("Error actualizando color del rol:", e)
+						})
+					}
+				}
+			}
+
+			await clan.save()
+
+			clanLogger.info(`Configuración actualizada para clan ${clan.name}`)
+
+			return { success: true, clan }
+		} catch (error) {
+			clanLogger.error("Error actualizando configuración del clan:", error)
+			return { success: false, error: "Error al actualizar la configuración del clan" }
+		}
 	}
 }

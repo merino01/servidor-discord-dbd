@@ -15,6 +15,9 @@ export interface IClan extends Document {
 	isActive: boolean
 	deletedAt?: Date
 	deletedBy?: string
+	maxMembers: number
+	maxVoiceChannels: number
+	roleColor?: number
 }
 
 const ClanSchema = new Schema<IClan>({
@@ -30,7 +33,10 @@ const ClanSchema = new Schema<IClan>({
 	createdBy: { type: String, required: true },
 	isActive: { type: Boolean, default: true },
 	deletedAt: { type: Date },
-	deletedBy: { type: String }
+	deletedBy: { type: String },
+	maxMembers: { type: Number, required: true },
+	maxVoiceChannels: { type: Number, required: true, default: 1 },
+	roleColor: { type: Number }
 })
 
 ClanSchema.index({ guildId: 1, name: 1 }, { unique: true })
