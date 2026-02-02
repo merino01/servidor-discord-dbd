@@ -1,8 +1,11 @@
-import { ChannelType, MessageFlags, PermissionFlagsBits } from "discord.js"
+import { ChannelType, MessageFlags, PermissionFlagsBits, VoiceBasedChannel } from "discord.js"
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext, OptionType } from "@/core/types"
 import { RandomChannelModel } from "@org/mongo"
+import { botLogger } from "@/core/logger"
+
+const randomChannelLogger = botLogger.child("random-channel")
 
 class RandomChannelCommand extends BaseCommand {
 	public async configurar (context: CommandContext) {
@@ -21,7 +24,7 @@ class RandomChannelCommand extends BaseCommand {
 		}
 
 		const channel = await interaction.guild?.channels.create({
-			name: "Canal Aleatorio",
+			name: "⇩ Unirse aleatoriamente",
 			type: ChannelType.GuildVoice,
 			parent: category ? category.id : undefined
 		})
@@ -46,6 +49,49 @@ class RandomChannelCommand extends BaseCommand {
 		interaction.reply({
 			content: "Canales aleatorios configurados correctamente.",
 			flags: MessageFlags.Ephemeral
+		})
+	}
+
+	public async eliminar (context: CommandContext) {
+		const { interaction } = context
+
+		const channel = interaction.options.getChannel("canal", true) as VoiceBasedChannel
+		if (channel.type !== ChannelType.GuildVoice) {
+			await interaction.reply({
+				content: "El canal proporcionado no es válido.",
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const channelDb = await RandomChannelModel.findOne({
+			guildId: interaction.guild?.id,
+			mainChannelId: channel.id
+		})
+
+		if (!channelDb) {
+			interaction.editReply({
+				content: "El canal no es un canal aleatorio"
+			})
+			return
+		}
+
+		let response = "Canal eliminado."
+		try {
+			await channel.delete()
+			await RandomChannelModel.deleteOne({
+				guildId: interaction.guild?.id,
+				mainChannelId: channel.id
+			})
+		} catch (error) {
+			randomChannelLogger.error(error instanceof Error ? error?.message : "Error al borrar el canal")
+			response = "Error al intentar eliminar el canal"
+		}
+
+		interaction.editReply({
+			content: response
 		})
 	}
 }
@@ -79,4 +125,15 @@ registerSubCommand(RandomChannelCommand, "configurar", {
 			required: false
 		}
 	]
+})
+
+registerSubCommand(RandomChannelCommand, "eliminar", {
+	name: "eliminar",
+	description: "Elimina la configuración del canal aleatorio.",
+	options: [{
+		name: "canal",
+		description: "El canal aleatorio a eliminar.",
+		type: OptionType.CHANNEL,
+		required: true
+	}]
 })
