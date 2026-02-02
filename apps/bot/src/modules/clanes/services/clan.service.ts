@@ -143,7 +143,7 @@ export class ClanService {
 	}): Promise<{ textChannel: TextChannel; voiceChannel: VoiceChannel }> {
 		const textPerms = this.getChannelPermissions(guild.id, role.id, "text")
 		const textChannel = await guild.channels.create({
-			name: `【${icon}】 ${clanName}`,
+			name: `【${icon}】${clanName}`,
 			type: ChannelType.GuildText,
 			parent: category.id,
 			permissionOverwrites: textPerms
