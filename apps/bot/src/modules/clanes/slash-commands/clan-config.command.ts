@@ -2,12 +2,14 @@ import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext, OptionType } from "@types"
 import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ChannelType } from "discord.js"
 import { botLogger } from "@/core/logger"
-import { ClanConfigModel, IClanConfig } from "@org/mongo"
+import { ClanConfigModel, IClanConfig, ClanModel } from "@org/mongo"
 import { BaseCommand } from "@/core/base/base-command"
+import { ClanService } from "../services/clan.service"
 
 const clanLogger = botLogger.child("clanes-config")
 
 export class ClanConfigCommand extends BaseCommand {
+	protected service = ClanService.getInstance()
 	private buildSuccessEmbed (title: string, description: string): EmbedBuilder {
 		return new EmbedBuilder()
 			.setColor(0x00ff00)
@@ -413,6 +415,161 @@ export class ClanConfigCommand extends BaseCommand {
 			})
 		}
 	}
+
+	async editarMaxMiembros (context: CommandContext): Promise<void> {
+		const { interaction } = context
+
+		if (!interaction.guild) {
+			await interaction.reply({
+				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const rolClan = interaction.options.getRole("clan", true)
+		const limite = interaction.options.getInteger("limite", true)
+
+		const clan = await ClanModel.findOne({ guildId: interaction.guild.id, roleId: rolClan.id, isActive: true })
+
+		if (!clan) {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed("No se encontró ningún clan con ese rol.")]
+			})
+			return
+		}
+
+		if (limite < 1 || limite > 100) {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed("El límite debe estar entre 1 y 100.")]
+			})
+			return
+		}
+
+		const result = await this.service.updateClanConfig({
+			clanId: clan._id.toString(),
+			maxMembers: limite
+		})
+
+		if (result.success) {
+			const embed = this.buildSuccessEmbed(
+				"Configuración actualizada",
+				`El límite de miembros del clan **${clan.name}** ahora es **${limite}**.`
+			)
+			await interaction.editReply({ embeds: [embed] })
+		} else {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
+			})
+		}
+	}
+
+	async editarMaxCanalesVoz (context: CommandContext): Promise<void> {
+		const { interaction } = context
+
+		if (!interaction.guild) {
+			await interaction.reply({
+				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const rolClan = interaction.options.getRole("clan", true)
+		const limite = interaction.options.getInteger("limite", true)
+
+		const clan = await ClanModel.findOne({ guildId: interaction.guild.id, roleId: rolClan.id, isActive: true })
+
+		if (!clan) {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed("No se encontró ningún clan con ese rol.")]
+			})
+			return
+		}
+
+		if (limite < 1 || limite > 10) {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed("El límite debe estar entre 1 y 10.")]
+			})
+			return
+		}
+
+		const result = await this.service.updateClanConfig({
+			clanId: clan._id.toString(),
+			maxVoiceChannels: limite
+		})
+
+		if (result.success) {
+			const embed = this.buildSuccessEmbed(
+				"Configuración actualizada",
+				`El límite de canales de voz del clan **${clan.name}** ahora es **${limite}**.`
+			)
+			await interaction.editReply({ embeds: [embed] })
+		} else {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
+			})
+		}
+	}
+
+	async editarColorRol (context: CommandContext): Promise<void> {
+		const { interaction } = context
+
+		if (!interaction.guild) {
+			await interaction.reply({
+				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const rolClan = interaction.options.getRole("clan", true)
+		const colorHex = interaction.options.getString("color", true)
+
+		const clan = await ClanModel.findOne({ guildId: interaction.guild.id, roleId: rolClan.id, isActive: true })
+
+		if (!clan) {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed("No se encontró ningún clan con ese rol.")]
+			})
+			return
+		}
+
+		// Validar formato hexadecimal
+		const hexRegex = /^#?([0-9A-Fa-f]{6})$/
+		const match = colorHex.match(hexRegex)
+		if (!match) {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed("El color debe estar en formato hexadecimal (ej: #FF5733).")]
+			})
+			return
+		}
+
+		const colorNumber = parseInt(match[1], 16)
+
+		const result = await this.service.updateClanConfig({
+			clanId: clan._id.toString(),
+			roleColor: colorNumber
+		})
+
+		if (result.success) {
+			const embed = this.buildSuccessEmbed(
+				"Configuración actualizada",
+				`El color del rol del clan **${clan.name}** ha sido actualizado a \`${colorHex}\`.`
+			)
+			await interaction.editReply({ embeds: [embed] })
+		} else {
+			await interaction.editReply({
+				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
+			})
+		}
+	}
 }
 
 registerSubCommand(ClanConfigCommand, "configurar", {
@@ -495,6 +652,63 @@ registerSubCommand(ClanConfigCommand, "quitarRol", {
 			name: "rol",
 			description: "Rol a quitar",
 			type: OptionType.ROLE,
+			required: true
+		}
+	]
+})
+
+registerSubCommand(ClanConfigCommand, "editarMaxMiembros", {
+	name: "editar-max-miembros",
+	description: "Configurar el máximo de miembros de un clan específico",
+	options: [
+		{
+			name: "clan",
+			description: "Rol del clan a configurar",
+			type: OptionType.ROLE,
+			required: true
+		},
+		{
+			name: "limite",
+			description: "Nuevo límite de miembros (1-100)",
+			type: OptionType.INTEGER,
+			required: true
+		}
+	]
+})
+
+registerSubCommand(ClanConfigCommand, "editarMaxCanalesVoz", {
+	name: "editar-max-canales-voz",
+	description: "Configurar el máximo de canales de voz de un clan específico",
+	options: [
+		{
+			name: "clan",
+			description: "Rol del clan a configurar",
+			type: OptionType.ROLE,
+			required: true
+		},
+		{
+			name: "limite",
+			description: "Nuevo límite de canales de voz (1-10)",
+			type: OptionType.INTEGER,
+			required: true
+		}
+	]
+})
+
+registerSubCommand(ClanConfigCommand, "editarColorRol", {
+	name: "editar-color-rol",
+	description: "Configurar el color del rol de un clan específico",
+	options: [
+		{
+			name: "clan",
+			description: "Rol del clan a configurar",
+			type: OptionType.ROLE,
+			required: true
+		},
+		{
+			name: "color",
+			description: "Color en formato hexadecimal (ej: #FF5733)",
+			type: OptionType.STRING,
 			required: true
 		}
 	]
