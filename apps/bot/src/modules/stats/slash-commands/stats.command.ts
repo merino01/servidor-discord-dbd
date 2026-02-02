@@ -6,7 +6,6 @@ import {
 import { CommandContext, OptionType } from "@types"
 import {
 	EmbedBuilder,
-	MessageFlags,
 	UserManager,
 	ActionRowBuilder,
 	ButtonBuilder,
