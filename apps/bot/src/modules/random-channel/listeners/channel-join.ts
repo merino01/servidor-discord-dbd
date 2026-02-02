@@ -60,6 +60,11 @@ const filterOccupiedChannels = (channels: VoiceChannel[]): VoiceChannel[] => {
 	return channels
 }
 
+const filterMainChannel = (
+	channels: VoiceChannel[],
+	mainChannelId: string
+): VoiceChannel[] => channels.filter((c) => c.id !== mainChannelId)
+
 const selectRandomChannel = (channels: VoiceChannel[]): VoiceChannel | undefined => {
 	if (channels.length === 0) {
 		return undefined
@@ -82,7 +87,8 @@ const handleRandomChannelJoin = async (member: GuildMember, voiceState: VoiceSta
 	}
 
 	const channelsToPick = await selectChannelsToPick(channel.guild, randomChannelConfig)
-	const filteredChannels = filterOccupiedChannels(channelsToPick)
+	const noMainChannelList = filterMainChannel(channelsToPick, randomChannelConfig.mainChannelId)
+	const filteredChannels = filterOccupiedChannels(noMainChannelList)
 	const randomChannel = selectRandomChannel(filteredChannels)
 
 	if (!randomChannel) {
