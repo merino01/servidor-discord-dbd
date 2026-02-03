@@ -105,7 +105,7 @@ export class ClanService {
 		icon: string,
 		leaderId: string
 	}): Promise<{ role: Role; textChannel: TextChannel; voiceChannel: VoiceChannel }> {
-		const color = config.color
+		const { color } = config
 		const role = await guild.roles.create({
 			name: `${icon} ${clanName}`,
 			permissions: [],
@@ -141,7 +141,7 @@ export class ClanService {
 	}: {
 		guild: Guild,
 		categoryText: CategoryChannel,
-		categoryVoice	: CategoryChannel,
+		categoryVoice: CategoryChannel,
 		clanName: string,
 		icon: string,
 		role: Role
