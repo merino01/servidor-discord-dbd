@@ -106,7 +106,7 @@ export class ClanService {
 		leaderId: string
 	}): Promise<{ role: Role; textChannel: TextChannel; voiceChannel: VoiceChannel }> {
 		const role = await guild.roles.create({
-			name: clanName,
+			name: `${icon} ${clanName}`,
 			permissions: [],
 			mentionable: true
 		})
