@@ -105,18 +105,21 @@ export class ClanService {
 		icon: string,
 		leaderId: string
 	}): Promise<{ role: Role; textChannel: TextChannel; voiceChannel: VoiceChannel }> {
+		const { color } = config
 		const role = await guild.roles.create({
-			name: clanName,
+			name: `${icon} ${clanName}`,
 			permissions: [],
-			mentionable: true
+			mentionable: true,
+			color: color ?? undefined
 		})
 
-		const category = guild.channels.cache.get(config.categoryId) as CategoryChannel
-		if (!category) {
+		const categoryVoice = guild.channels.cache.get(config.categoryVoiceId) as CategoryChannel
+		const categoryText = guild.channels.cache.get(config.categoryTextId) as CategoryChannel
+		if (!categoryVoice || !categoryText) {
 			throw new Error("Categoría de clanes no encontrada")
 		}
 
-		const channels = await this.createClanChannels({ guild, category, clanName, icon, role })
+		const channels = await this.createClanChannels({ guild, categoryVoice, categoryText, clanName, icon, role })
 		await this.assignLeaderRoles({
 			guild,
 			leaderId,
@@ -130,13 +133,15 @@ export class ClanService {
 
 	private async createClanChannels ({
 		guild,
-		category,
+		categoryVoice,
+		categoryText,
 		clanName,
 		icon,
 		role
 	}: {
 		guild: Guild,
-		category: CategoryChannel,
+		categoryText: CategoryChannel,
+		categoryVoice: CategoryChannel,
 		clanName: string,
 		icon: string,
 		role: Role
@@ -145,7 +150,7 @@ export class ClanService {
 		const textChannel = await guild.channels.create({
 			name: `【${icon}】${clanName}`,
 			type: ChannelType.GuildText,
-			parent: category.id,
+			parent: categoryText.id,
 			permissionOverwrites: textPerms
 		})
 
@@ -153,7 +158,7 @@ export class ClanService {
 		const voiceChannel = await guild.channels.create({
 			name: `${icon} ${clanName}`,
 			type: ChannelType.GuildVoice,
-			parent: category.id,
+			parent: categoryVoice.id,
 			permissionOverwrites: voicePerms
 		})
 
@@ -598,8 +603,8 @@ export class ClanService {
 		clan: IClan,
 		config: IClanConfig
 	): Promise<string> {
-		const category = guild.channels.cache.get(config.categoryId) as CategoryChannel
-		if (!category) {
+		const categoryVoice = guild.channels.cache.get(config.categoryVoiceId) as CategoryChannel
+		if (!categoryVoice) {
 			throw new Error("Categoría de clanes no encontrada")
 		}
 
@@ -615,7 +620,7 @@ export class ClanService {
 		const voiceChannel = await guild.channels.create({
 			name: channelName,
 			type: ChannelType.GuildVoice,
-			parent: category.id,
+			parent: categoryVoice.id,
 			permissionOverwrites: voicePerms
 		})
 

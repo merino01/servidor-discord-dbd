@@ -43,12 +43,13 @@ export class ClanConfigCommand extends BaseCommand {
 	}
 
 	private validateConfigParams (
-		categoriaType: ChannelType,
+		categoriaVozType: ChannelType,
+		categoriaTextoType: ChannelType,
 		maxMiembros: number,
 		maxCanalesExtra: number,
 		expiracionHoras: number
 	): string | null {
-		if (categoriaType !== ChannelType.GuildCategory) {
+		if (categoriaVozType !== ChannelType.GuildCategory || categoriaTextoType !== ChannelType.GuildCategory) {
 			return "El canal especificado debe ser una categoría."
 		}
 
@@ -68,7 +69,9 @@ export class ClanConfigCommand extends BaseCommand {
 	}
 
 	private buildConfigEmbed (params: {
-		categoriaId: string
+		categoriaVozId: string
+		categoriaTextoId: string
+		color?: string
 		rolLiderId: string
 		maxMiembros: number
 		maxCanalesExtra: number
@@ -77,13 +80,20 @@ export class ClanConfigCommand extends BaseCommand {
 		return this.buildSuccessEmbed(
 			"Sistema de clanes configurado",
 			"El sistema de clanes ha sido configurado correctamente.\n\n" +
-			`**Categoría:** <#${params.categoriaId}>\n` +
+			`**Categoría de voz:** <#${params.categoriaVozId}>\n` +
+			`**Categoría de texto:** <#${params.categoriaTextoId}>\n` +
+			`**Color:** ${params.color ? `#${params.color}` : "Predeterminado"}\n` +
 			`**Rol de líder:** <@&${params.rolLiderId}>\n` +
 			`**Máximo de miembros por clan:** ${params.maxMiembros}\n` +
 			`**Máximo de canales de voz extra:** ${params.maxCanalesExtra}\n` +
 			`**Expiración de invitaciones:** ${params.expiracionHoras} horas\n\n` +
 			"✅ El sistema está **habilitado** y listo para usar."
 		)
+	}
+
+	private validateHexColor (colorHex: string): boolean {
+		const hexRegex = /^#?([0-9A-Fa-f]{6})$/
+		return colorHex.match(hexRegex) !== null
 	}
 
 	async configurar (context: CommandContext): Promise<void> {
@@ -97,14 +107,17 @@ export class ClanConfigCommand extends BaseCommand {
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		const categoria = interaction.options.getChannel("categoria", true)
+		const categoriaVoz = interaction.options.getChannel("categoria-voz", true)
+		const categoriaTexto = interaction.options.getChannel("categoria-texto", true)
 		const rolLider = interaction.options.getRole("rol-lider", true)
 		const maxMiembros = interaction.options.getInteger("max-miembros") ?? 50
 		const maxCanalesExtra = interaction.options.getInteger("max-canales-extra") ?? 3
 		const expiracionHoras = interaction.options.getInteger("expiracion-invitacion") ?? 24
+		const colorHex = interaction.options.getString("color")
 
 		const validationError = this.validateConfigParams(
-			categoria.type,
+			categoriaVoz.type,
+			categoriaTexto.type,
 			maxMiembros,
 			maxCanalesExtra,
 			expiracionHoras
@@ -122,7 +135,9 @@ export class ClanConfigCommand extends BaseCommand {
 					guildId: interaction.guild.id,
 					enabled: true,
 					leaderRoleId: rolLider.id,
-					categoryId: categoria.id,
+					categoryVoiceId: categoriaVoz.id,
+					categoryTextId: categoriaTexto.id,
+					color: colorHex ? parseInt(colorHex, 16) : null,
 					maxMembers: maxMiembros,
 					maxExtraVoiceChannels: maxCanalesExtra,
 					invitationExpirationHours: expiracionHoras
@@ -132,8 +147,10 @@ export class ClanConfigCommand extends BaseCommand {
 
 			clanLogger.info(`Sistema de clanes configurado en guild ${interaction.guild.id}`)
 			const embed = this.buildConfigEmbed({
-				categoriaId: categoria.id,
+				categoriaVozId: categoriaVoz.id,
+				categoriaTextoId: categoriaTexto.id,
 				rolLiderId: rolLider.id,
+				color: colorHex || undefined,
 				maxMiembros,
 				maxCanalesExtra,
 				expiracionHoras
@@ -256,8 +273,18 @@ export class ClanConfigCommand extends BaseCommand {
 				inline: true
 			},
 			{
-				name: "Categoría",
-				value: `<#${config.categoryId}>`,
+				name: "Categoría de voz",
+				value: `<#${config.categoryVoiceId}>`,
+				inline: true
+			},
+			{
+				name: "Categoría de texto",
+				value: `<#${config.categoryTextId}>`,
+				inline: true
+			},
+			{
+				name: "Color",
+				value: config.color ? `#${config.color}` : "Predeterminado",
 				inline: true
 			},
 			{
@@ -542,16 +569,14 @@ export class ClanConfigCommand extends BaseCommand {
 		}
 
 		// Validar formato hexadecimal
-		const hexRegex = /^#?([0-9A-Fa-f]{6})$/
-		const match = colorHex.match(hexRegex)
-		if (!match) {
+		if (!this.validateHexColor(colorHex)) {
 			await interaction.editReply({
 				embeds: [this.buildErrorEmbed("El color debe estar en formato hexadecimal (ej: #FF5733).")]
 			})
 			return
 		}
 
-		const colorNumber = parseInt(match[1], 16)
+		const colorNumber = parseInt(colorHex, 16)
 
 		const result = await this.service.updateClanConfig({
 			clanId: clan._id.toString(),
@@ -577,8 +602,14 @@ registerSubCommand(ClanConfigCommand, "configurar", {
 	description: "Configura el sistema de clanes del servidor",
 	options: [
 		{
-			name: "categoria",
-			description: "Categoría donde se crearán los canales de los clanes",
+			name: "categoria-voz",
+			description: "Categoría donde se crearán los canales de voz de los clanes",
+			type: OptionType.CHANNEL,
+			required: true
+		},
+		{
+			name: "categoria-texto",
+			description: "Categoría donde se crearán los canales de texto de los clanes",
 			type: OptionType.CHANNEL,
 			required: true
 		},
@@ -605,6 +636,11 @@ registerSubCommand(ClanConfigCommand, "configurar", {
 			description: "Horas para que expire una invitación (1-168, por defecto 24)",
 			type: OptionType.INTEGER,
 			required: false
+		},
+		{
+			name: "color",
+			description: "Color en formato hexadecimal (ej: #FF5733)",
+			type: OptionType.STRING
 		}
 	]
 })
