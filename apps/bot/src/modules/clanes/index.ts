@@ -1,6 +1,5 @@
 import "./slash-commands/clan-config.command"
 import "./slash-commands/clan-member.command"
-import "./slash-commands/clan-leader.command"
 import "./slash-commands/clan-mod.command"
 import "./slash-commands/clan-stats.command"
 import "./slash-commands/clan-admin.command"
