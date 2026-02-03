@@ -43,12 +43,13 @@ export class ClanConfigCommand extends BaseCommand {
 	}
 
 	private validateConfigParams (
-		categoriaType: ChannelType,
+		categoriaVozType: ChannelType,
+		categoriaTextoType: ChannelType,
 		maxMiembros: number,
 		maxCanalesExtra: number,
 		expiracionHoras: number
 	): string | null {
-		if (categoriaType !== ChannelType.GuildCategory) {
+		if (categoriaVozType !== ChannelType.GuildCategory || categoriaTextoType !== ChannelType.GuildCategory) {
 			return "El canal especificado debe ser una categoría."
 		}
 
@@ -68,7 +69,8 @@ export class ClanConfigCommand extends BaseCommand {
 	}
 
 	private buildConfigEmbed (params: {
-		categoriaId: string
+		categoriaVozId: string
+		categoriaTextoId: string
 		rolLiderId: string
 		maxMiembros: number
 		maxCanalesExtra: number
@@ -77,7 +79,8 @@ export class ClanConfigCommand extends BaseCommand {
 		return this.buildSuccessEmbed(
 			"Sistema de clanes configurado",
 			"El sistema de clanes ha sido configurado correctamente.\n\n" +
-			`**Categoría:** <#${params.categoriaId}>\n` +
+			`**Categoría de voz:** <#${params.categoriaVozId}>\n` +
+			`**Categoría de texto:** <#${params.categoriaTextoId}>\n` +
 			`**Rol de líder:** <@&${params.rolLiderId}>\n` +
 			`**Máximo de miembros por clan:** ${params.maxMiembros}\n` +
 			`**Máximo de canales de voz extra:** ${params.maxCanalesExtra}\n` +
@@ -97,14 +100,16 @@ export class ClanConfigCommand extends BaseCommand {
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		const categoria = interaction.options.getChannel("categoria", true)
+		const categoriaVoz = interaction.options.getChannel("categoria-voz", true)
+		const categoriaTexto = interaction.options.getChannel("categoria-texto", true)
 		const rolLider = interaction.options.getRole("rol-lider", true)
 		const maxMiembros = interaction.options.getInteger("max-miembros") ?? 50
 		const maxCanalesExtra = interaction.options.getInteger("max-canales-extra") ?? 3
 		const expiracionHoras = interaction.options.getInteger("expiracion-invitacion") ?? 24
 
 		const validationError = this.validateConfigParams(
-			categoria.type,
+			categoriaVoz.type,
+			categoriaTexto.type,
 			maxMiembros,
 			maxCanalesExtra,
 			expiracionHoras
@@ -122,7 +127,8 @@ export class ClanConfigCommand extends BaseCommand {
 					guildId: interaction.guild.id,
 					enabled: true,
 					leaderRoleId: rolLider.id,
-					categoryId: categoria.id,
+					categoryVoiceId: categoriaVoz.id,
+					categoryTextId: categoriaTexto.id,
 					maxMembers: maxMiembros,
 					maxExtraVoiceChannels: maxCanalesExtra,
 					invitationExpirationHours: expiracionHoras
@@ -132,7 +138,8 @@ export class ClanConfigCommand extends BaseCommand {
 
 			clanLogger.info(`Sistema de clanes configurado en guild ${interaction.guild.id}`)
 			const embed = this.buildConfigEmbed({
-				categoriaId: categoria.id,
+				categoriaVozId: categoriaVoz.id,
+				categoriaTextoId: categoriaTexto.id,
 				rolLiderId: rolLider.id,
 				maxMiembros,
 				maxCanalesExtra,
@@ -256,8 +263,13 @@ export class ClanConfigCommand extends BaseCommand {
 				inline: true
 			},
 			{
-				name: "Categoría",
-				value: `<#${config.categoryId}>`,
+				name: "Categoría de voz",
+				value: `<#${config.categoryVoiceId}>`,
+				inline: true
+			},
+			{
+				name: "Categoría de texto",
+				value: `<#${config.categoryTextId}>`,
 				inline: true
 			},
 			{
@@ -577,8 +589,14 @@ registerSubCommand(ClanConfigCommand, "configurar", {
 	description: "Configura el sistema de clanes del servidor",
 	options: [
 		{
-			name: "categoria",
-			description: "Categoría donde se crearán los canales de los clanes",
+			name: "categoria-voz",
+			description: "Categoría donde se crearán los canales de voz de los clanes",
+			type: OptionType.CHANNEL,
+			required: true
+		},
+		{
+			name: "categoria-texto",
+			description: "Categoría donde se crearán los canales de texto de los clanes",
 			type: OptionType.CHANNEL,
 			required: true
 		},

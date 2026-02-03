@@ -4,7 +4,8 @@ export interface IClanConfig extends Document {
 	guildId: string
 	enabled: boolean
 	leaderRoleId: string
-	categoryId: string
+	categoryVoiceId: string
+	categoryTextId: string
 	maxMembers: number
 	maxExtraVoiceChannels: number
 	invitationExpirationHours: number
@@ -17,7 +18,8 @@ const ClanConfigSchema = new Schema<IClanConfig>({
 	guildId: { type: String, required: true, unique: true, index: true },
 	enabled: { type: Boolean, default: true },
 	leaderRoleId: { type: String, required: true },
-	categoryId: { type: String, required: true },
+	categoryVoiceId: { type: String, required: true },
+	categoryTextId: { type: String, required: true },
 	maxMembers: { type: Number, default: 50, min: 1, max: 100 },
 	maxExtraVoiceChannels: { type: Number, default: 3, min: 0, max: 10 },
 	invitationExpirationHours: { type: Number, default: 24, min: 1, max: 168 },
