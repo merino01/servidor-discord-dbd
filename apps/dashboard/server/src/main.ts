@@ -2,9 +2,12 @@ import express from "express"
 import { join } from "node:path"
 import { existsSync } from "node:fs"
 import { dashboardLogger } from "./lib/logger"
+import { getConfig } from "@org/config"
+
+const config = getConfig()
 
 const host = process.env.HOST ?? "localhost"
-const port = process.env.PORT ? Number(process.env.PORT) : 3000
+const { port } = config.dashboard
 
 const app = express()
 

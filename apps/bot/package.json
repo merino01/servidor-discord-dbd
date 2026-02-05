@@ -2,6 +2,7 @@
 	"name": "@org/bot",
 	"version": "0.0.1",
 	"private": true,
+	"type": "module",
 	"nx": {
 		"targets": {
 			"build": {
@@ -14,10 +15,10 @@
 					"platform": "node",
 					"outputPath": "apps/bot/dist",
 					"format": [
-						"cjs"
+						"esm"
 					],
 					"bundle": true,
-					"thirdParty": true,
+					"thirdParty": false,
 					"main": "apps/bot/src/main.ts",
 					"tsConfig": "apps/bot/tsconfig.app.json",
 					"assets": [
