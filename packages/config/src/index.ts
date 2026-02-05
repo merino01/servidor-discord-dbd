@@ -31,6 +31,10 @@ export interface FeaturesConfig {
 	stats: StatsFeature
 }
 
+export interface DashboardConfig {
+	port: number
+}
+
 export interface AppConfig {
 	discord: DiscordConfig
 	bot: BotConfig
@@ -38,6 +42,7 @@ export interface AppConfig {
 	databases: {
 		mongo: MongoConfig
 	}
+	dashboard: DashboardConfig
 }
 
 let cachedConfig: AppConfig | null = null
