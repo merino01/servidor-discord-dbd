@@ -110,7 +110,7 @@ export class ClanService {
 			name: `${icon} ${clanName}`,
 			permissions: [],
 			mentionable: true,
-			color: color ?? undefined
+			colors: color !== null ? { primaryColor: color } : undefined
 		})
 
 		const categoryVoice = guild.channels.cache.get(config.categoryVoiceId) as CategoryChannel
@@ -1161,13 +1161,12 @@ export class ClanService {
 			if (params.roleColor !== undefined) {
 				clan.roleColor = params.roleColor
 
-				// Actualizar el color del rol en Discord
 				const client = BotInstance.get()
 				const guild = client?.guilds.cache.get(clan.guildId)
 				if (guild) {
 					const role = guild.roles.cache.get(clan.roleId)
-					if (role) {
-						await role.setColor(params.roleColor).catch((e) => {
+					if (role && params.roleColor !== null) {
+						await role.setColors({ primaryColor: params.roleColor }).catch((e) => {
 							clanLogger.error("Error actualizando color del rol:", e)
 						})
 					}
