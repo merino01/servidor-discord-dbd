@@ -8,7 +8,7 @@ export interface IClanConfig extends Document {
 	categoryTextId: string
 	maxMembers: number
 	maxExtraVoiceChannels: number
-	color?: number
+	color: number | null
 	invitationExpirationHours: number
 	additionalRoleIds: string[]
 	createdAt: Date

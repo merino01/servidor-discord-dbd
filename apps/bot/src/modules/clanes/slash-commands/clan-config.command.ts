@@ -42,26 +42,29 @@ export class ClanConfigCommand extends BaseCommand {
 		return embed
 	}
 
-	private validateConfigParams (
-		categoriaVozType: ChannelType,
-		categoriaTextoType: ChannelType,
-		maxMiembros: number,
-		maxCanalesExtra: number,
+	private validateConfigParams (params: {
+		categoriaVozType: ChannelType
+		categoriaTextoType: ChannelType
+		maxMiembros: number
+		maxCanalesExtra: number
 		expiracionHoras: number
-	): string | null {
-		if (categoriaVozType !== ChannelType.GuildCategory || categoriaTextoType !== ChannelType.GuildCategory) {
+	}): string | null {
+		const isValidCategory = params.categoriaVozType === ChannelType.GuildCategory &&
+			params.categoriaTextoType === ChannelType.GuildCategory
+
+		if (!isValidCategory) {
 			return "El canal especificado debe ser una categoría."
 		}
 
-		if (maxMiembros < 1 || maxMiembros > 100) {
+		if (params.maxMiembros < 1 || params.maxMiembros > 100) {
 			return "El máximo de miembros debe estar entre 1 y 100."
 		}
 
-		if (maxCanalesExtra < 0 || maxCanalesExtra > 10) {
+		if (params.maxCanalesExtra < 0 || params.maxCanalesExtra > 10) {
 			return "El máximo de canales extra debe estar entre 0 y 10."
 		}
 
-		if (expiracionHoras < 1 || expiracionHoras > 168) {
+		if (params.expiracionHoras < 1 || params.expiracionHoras > 168) {
 			return "La expiración de invitaciones debe estar entre 1 y 168 horas (7 días)."
 		}
 
@@ -96,6 +99,46 @@ export class ClanConfigCommand extends BaseCommand {
 		return colorHex.match(hexRegex) !== null
 	}
 
+	private getConfigOptions (context: CommandContext) {
+		const { interaction } = context
+		return {
+			categoriaVoz: interaction.options.getChannel("categoria-voz", true),
+			categoriaTexto: interaction.options.getChannel("categoria-texto", true),
+			rolLider: interaction.options.getRole("rol-lider", true),
+			maxMiembros: interaction.options.getInteger("max-miembros") ?? 50,
+			maxCanalesExtra: interaction.options.getInteger("max-canales-extra") ?? 2,
+			expiracionHoras: interaction.options.getInteger("expiracion-invitacion") ?? 24,
+			colorHex: interaction.options.getString("color")
+		}
+	}
+
+	private async saveConfiguration (params: {
+		guildId: string
+		rolLiderId: string
+		categoriaVozId: string
+		categoriaTextoId: string
+		colorHex: string | null
+		maxMiembros: number
+		maxCanalesExtra: number
+		expiracionHoras: number
+	}): Promise<void> {
+		await ClanConfigModel.findOneAndUpdate(
+			{ guildId: params.guildId },
+			{
+				guildId: params.guildId,
+				enabled: true,
+				leaderRoleId: params.rolLiderId,
+				categoryVoiceId: params.categoriaVozId,
+				categoryTextId: params.categoriaTextoId,
+				color: params.colorHex ? parseInt(params.colorHex, 16) : null,
+				maxMembers: params.maxMiembros,
+				maxExtraVoiceChannels: params.maxCanalesExtra,
+				invitationExpirationHours: params.expiracionHoras
+			},
+			{ upsert: true, new: true }
+		)
+	}
+
 	async configurar (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
@@ -107,21 +150,15 @@ export class ClanConfigCommand extends BaseCommand {
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		const categoriaVoz = interaction.options.getChannel("categoria-voz", true)
-		const categoriaTexto = interaction.options.getChannel("categoria-texto", true)
-		const rolLider = interaction.options.getRole("rol-lider", true)
-		const maxMiembros = interaction.options.getInteger("max-miembros") ?? 50
-		const maxCanalesExtra = interaction.options.getInteger("max-canales-extra") ?? 3
-		const expiracionHoras = interaction.options.getInteger("expiracion-invitacion") ?? 24
-		const colorHex = interaction.options.getString("color")
+		const options = this.getConfigOptions(context)
 
-		const validationError = this.validateConfigParams(
-			categoriaVoz.type,
-			categoriaTexto.type,
-			maxMiembros,
-			maxCanalesExtra,
-			expiracionHoras
-		)
+		const validationError = this.validateConfigParams({
+			categoriaVozType: options.categoriaVoz.type,
+			categoriaTextoType: options.categoriaTexto.type,
+			maxMiembros: options.maxMiembros,
+			maxCanalesExtra: options.maxCanalesExtra,
+			expiracionHoras: options.expiracionHoras
+		})
 
 		if (validationError) {
 			await interaction.editReply({ embeds: [this.buildErrorEmbed(validationError)] })
@@ -129,31 +166,26 @@ export class ClanConfigCommand extends BaseCommand {
 		}
 
 		try {
-			await ClanConfigModel.findOneAndUpdate(
-				{ guildId: interaction.guild.id },
-				{
-					guildId: interaction.guild.id,
-					enabled: true,
-					leaderRoleId: rolLider.id,
-					categoryVoiceId: categoriaVoz.id,
-					categoryTextId: categoriaTexto.id,
-					color: colorHex ? parseInt(colorHex, 16) : null,
-					maxMembers: maxMiembros,
-					maxExtraVoiceChannels: maxCanalesExtra,
-					invitationExpirationHours: expiracionHoras
-				},
-				{ upsert: true, new: true }
-			)
+			await this.saveConfiguration({
+				guildId: interaction.guild.id,
+				rolLiderId: options.rolLider.id,
+				categoriaVozId: options.categoriaVoz.id,
+				categoriaTextoId: options.categoriaTexto.id,
+				colorHex: options.colorHex,
+				maxMiembros: options.maxMiembros,
+				maxCanalesExtra: options.maxCanalesExtra,
+				expiracionHoras: options.expiracionHoras
+			})
 
 			clanLogger.info(`Sistema de clanes configurado en guild ${interaction.guild.id}`)
 			const embed = this.buildConfigEmbed({
-				categoriaVozId: categoriaVoz.id,
-				categoriaTextoId: categoriaTexto.id,
-				rolLiderId: rolLider.id,
-				color: colorHex || undefined,
-				maxMiembros,
-				maxCanalesExtra,
-				expiracionHoras
+				categoriaVozId: options.categoriaVoz.id,
+				categoriaTextoId: options.categoriaTexto.id,
+				rolLiderId: options.rolLider.id,
+				color: options.colorHex || undefined,
+				maxMiembros: options.maxMiembros,
+				maxCanalesExtra: options.maxCanalesExtra,
+				expiracionHoras: options.expiracionHoras
 			})
 
 			await interaction.editReply({ embeds: [embed] })
