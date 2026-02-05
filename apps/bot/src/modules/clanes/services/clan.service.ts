@@ -14,11 +14,11 @@ import {
 	TextChannel,
 	VoiceChannel,
 	CategoryChannel,
-	PermissionFlagsBits,
 	ChannelType,
 	Guild
 } from "discord.js"
 import { botEvents } from "@/core/events/bot-events"
+import { getChannelPermissions } from "../utils/get-channel-permissions"
 
 const clanLogger = botLogger.child("clanes")
 
@@ -46,23 +46,6 @@ export class ClanService {
 		if (role) {
 			await role.delete().catch((e) => clanLogger.error("Error eliminando rol:", e))
 		}
-	}
-
-	private getChannelPermissions (guildId: string, roleId: string, type: "text" | "voice") {
-		const rolePermissions = type === "text"
-			? [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]
-			: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect, PermissionFlagsBits.Speak]
-
-		return [
-			{
-				id: guildId,
-				deny: [PermissionFlagsBits.ViewChannel]
-			},
-			{
-				id: roleId,
-				allow: rolePermissions
-			}
-		]
 	}
 
 	private async validateClanCreation (
@@ -119,7 +102,15 @@ export class ClanService {
 			throw new Error("Categoría de clanes no encontrada")
 		}
 
-		const channels = await this.createClanChannels({ guild, categoryVoice, categoryText, clanName, icon, role })
+		const channels = await this.createClanChannels({
+			guild,
+			categoryVoice,
+			categoryText,
+			clanName,
+			icon,
+			role,
+			leaderRoleId: config.leaderRoleId
+		})
 		await this.assignLeaderRoles({
 			guild,
 			leaderId,
@@ -137,16 +128,18 @@ export class ClanService {
 		categoryText,
 		clanName,
 		icon,
-		role
+		role,
+		leaderRoleId
 	}: {
 		guild: Guild,
 		categoryText: CategoryChannel,
 		categoryVoice: CategoryChannel,
 		clanName: string,
 		icon: string,
-		role: Role
+		role: Role,
+		leaderRoleId: string
 	}): Promise<{ textChannel: TextChannel; voiceChannel: VoiceChannel }> {
-		const textPerms = this.getChannelPermissions(guild.id, role.id, "text")
+		const textPerms = getChannelPermissions("text", leaderRoleId, guild.id, role.id)
 		const textChannel = await guild.channels.create({
 			name: `【${icon}】${clanName}`,
 			type: ChannelType.GuildText,
@@ -154,7 +147,7 @@ export class ClanService {
 			permissionOverwrites: textPerms
 		})
 
-		const voicePerms = this.getChannelPermissions(guild.id, role.id, "voice")
+		const voicePerms = getChannelPermissions("voice", leaderRoleId, guild.id, role.id)
 		const voiceChannel = await guild.channels.create({
 			name: `${icon} ${clanName}`,
 			type: ChannelType.GuildVoice,
@@ -615,7 +608,7 @@ export class ClanService {
 
 		const channelNumber = clan.voiceChannelIds.length + 1
 		const channelName = `${clan.icon} ${clan.name} #${channelNumber}`
-		const voicePerms = this.getChannelPermissions(guild.id, role.id, "voice")
+		const voicePerms = getChannelPermissions("voice", config.leaderRoleId, guild.id, role.id)
 
 		const voiceChannel = await guild.channels.create({
 			name: channelName,
