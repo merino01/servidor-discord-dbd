@@ -1,8 +1,11 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { dirname } from "node:path"
 
-// const __filename = fileURLToPath(import.meta.url)
-// const __dirname = dirname(__filename)
+if (!globalThis.__dirname) {
+	globalThis.__dirname = dirname(fileURLToPath(import.meta.url))
+}
 
 export interface DiscordConfig {
 	token: string
@@ -31,6 +34,10 @@ export interface FeaturesConfig {
 	stats: StatsFeature
 }
 
+export interface DashboardConfig {
+	port: number
+}
+
 export interface AppConfig {
 	discord: DiscordConfig
 	bot: BotConfig
@@ -38,6 +45,7 @@ export interface AppConfig {
 	databases: {
 		mongo: MongoConfig
 	}
+	dashboard: DashboardConfig
 }
 
 let cachedConfig: AppConfig | null = null

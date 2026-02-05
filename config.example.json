@@ -21,5 +21,8 @@
 		"mongo": {
 			"uri": "mongodb://usuario:contraseña@localhost:27017/discord-bot?authSource=admin"
 		}
+	},
+	"dashboard": {
+		"port": 3000
 	}
 }
