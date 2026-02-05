@@ -19,21 +19,24 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             bash -lc "
+            set -e
+
             cd ~/dev/servidor-discord-dbd
 
-            echo '🧰 Cargando Node/FNM...'
-            FNM_PATH="/home/dbduser/.local/share/fnm"
-            FNM_BIN="$FNM_PATH/fnm"
-            if [ -x "$FNM_BIN" ]; then
-              export PATH="$FNM_PATH:$PATH"
-              eval "$($FNM_BIN env --shell bash)"
-              $FNM_BIN use --lts
+            echo '🧰 Cargando FNM...'
+            export FNM_PATH=\"/home/dbduser/.local/share/fnm\"
+            export PATH=\"\$FNM_PATH:\$PATH\"
+
+            if command -v fnm >/dev/null 2>&1; then
+              eval \"\$(fnm env)\"
+              fnm use 22.21.1
+            else
+              echo '❌ fnm no encontrado'
+              exit 1
             fi
 
-            if command -v npm >/dev/null 2>&1; then
-              NPM_GLOBAL_BIN="$(npm bin -g)"
-              [ -n "$NPM_GLOBAL_BIN" ] && export PATH="$NPM_GLOBAL_BIN:$PATH"
-            fi
+            echo '🟢 Node:' \$(node -v)
+            echo '🟢 NPM:' \$(npm -v)
 
             echo '📥 Obteniendo últimos cambios...'
             git pull
