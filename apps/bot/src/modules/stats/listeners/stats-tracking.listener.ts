@@ -205,6 +205,71 @@ botEvents.on("voice:leave", async (member: GuildMember) => {
 })
 
 /**
+ * Listener de movimiento entre canales de voz
+ */
+botEvents.on("voice:move", async (
+	member: GuildMember,
+	oldState: VoiceState,
+	newState: VoiceState
+) => {
+	const userId = member.id
+	const guildId = member.guild.id
+
+	try {
+		const stats = await UserStatsModel.findOne({ userId, guildId })
+
+		if (!stats || !stats.voiceSessionStart) {
+			return
+		}
+
+		// Calcular duración en el canal anterior
+		const moveTime = new Date()
+		const sessionDuration =
+			moveTime.getTime() - stats.voiceSessionStart.getTime()
+		const minutesInVoice = Math.floor(sessionDuration / 60000)
+
+		if (minutesInVoice > 0) {
+			stats.voiceMinutes += minutesInVoice
+			await processVoiceSessionXp(userId, guildId, member.guild, minutesInVoice)
+		}
+
+		// Actualizar al nuevo canal y reiniciar sesión
+		const newChannelId = newState.channelId
+		if (newChannelId) {
+			stats.currentVoiceChannelId = newChannelId
+		}
+		stats.voiceSessionStart = moveTime
+		stats.lastActive = new Date()
+
+		await stats.save()
+
+		const oldChannelId = oldState.channelId
+		statsLogger.debug(
+			`User ${userId} moved from channel ${oldChannelId} to ${newChannelId}, session: ${minutesInVoice} minutes`
+		)
+	} catch (error) {
+		statsLogger.error("Error tracking voice move:", error)
+	}
+})
+
+botEvents.on("command:executed", async (interaction) => {
+	const userId = interaction.user.id
+	const guildId = interaction.guildId
+
+	try {
+		const stats = await UserStatsModel.findOne({ userId, guildId })
+
+		if (stats) {
+			stats.commandsUsed += 1
+			stats.lastActive = new Date()
+			await stats.save()
+		}
+	} catch (error) {
+		statsLogger.error("Error tracking command usage:", error instanceof Error ? error.message : String(error))
+	}
+})
+
+/**
  * Guarda las estadísticas de voz de un usuario activo sin resetear la sesión
  */
 async function saveActiveVoiceStats (
@@ -480,54 +545,6 @@ async function processVoiceSessionXp (
 		)
 	}
 }
-
-/**
- * Listener de movimiento entre canales de voz
- */
-botEvents.on("voice:move", async (
-	member: GuildMember,
-	oldState: VoiceState,
-	newState: VoiceState
-) => {
-	const userId = member.id
-	const guildId = member.guild.id
-
-	try {
-		const stats = await UserStatsModel.findOne({ userId, guildId })
-
-		if (!stats || !stats.voiceSessionStart) {
-			return
-		}
-
-		// Calcular duración en el canal anterior
-		const moveTime = new Date()
-		const sessionDuration =
-			moveTime.getTime() - stats.voiceSessionStart.getTime()
-		const minutesInVoice = Math.floor(sessionDuration / 60000)
-
-		if (minutesInVoice > 0) {
-			stats.voiceMinutes += minutesInVoice
-			await processVoiceSessionXp(userId, guildId, member.guild, minutesInVoice)
-		}
-
-		// Actualizar al nuevo canal y reiniciar sesión
-		const newChannelId = newState.channelId
-		if (newChannelId) {
-			stats.currentVoiceChannelId = newChannelId
-		}
-		stats.voiceSessionStart = moveTime
-		stats.lastActive = new Date()
-
-		await stats.save()
-
-		const oldChannelId = oldState.channelId
-		statsLogger.debug(
-			`User ${userId} moved from channel ${oldChannelId} to ${newChannelId}, session: ${minutesInVoice} minutes`
-		)
-	} catch (error) {
-		statsLogger.error("Error tracking voice move:", error)
-	}
-})
 
 statsLogger.info("Stats tracking listeners initialized")
 
