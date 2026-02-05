@@ -23,11 +23,17 @@ jobs:
 
             echo '🧰 Cargando Node/FNM...'
             FNM_PATH="/home/dbduser/.local/share/fnm"
-            if [ -d "$FNM_PATH" ]; then
+            FNM_BIN="$FNM_PATH/fnm"
+            if [ -x "$FNM_BIN" ]; then
               export PATH="$FNM_PATH:$PATH"
-              eval "`fnm env`"
+              eval "$($FNM_BIN env --shell bash)"
+              $FNM_BIN use --lts
             fi
-            command -v fnm >/dev/null 2>&1 && eval \"$(fnm env --use-on-cd)\" && fnm use --lts
+
+            if command -v npm >/dev/null 2>&1; then
+              NPM_GLOBAL_BIN="$(npm bin -g)"
+              [ -n "$NPM_GLOBAL_BIN" ] && export PATH="$NPM_GLOBAL_BIN:$PATH"
+            fi
 
             echo '📥 Obteniendo últimos cambios...'
             git pull
