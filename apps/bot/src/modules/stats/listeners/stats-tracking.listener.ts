@@ -22,7 +22,7 @@ interface LevelUpNotification {
 }
 
 async function notifyLevelUp (options: LevelUpNotification): Promise<void> {
-	const { guild, userId, oldLevel, newLevel, fallbackChannel } = options
+	const { guild, userId, newLevel, fallbackChannel } = options
 	try {
 		const channelId = LevelService.getLevelUpChannelId()
 		let targetChannel: TextChannel | null = null
@@ -40,7 +40,7 @@ async function notifyLevelUp (options: LevelUpNotification): Promise<void> {
 
 		if (targetChannel) {
 			await targetChannel.send(
-				`🎉 <@${userId}> ¡Has subido al nivel **${newLevel}**! (antes: ${oldLevel})`
+				`🎉 <@${userId}> ¡Has subido al nivel **${newLevel}**!`
 			)
 		}
 	} catch (error) {
