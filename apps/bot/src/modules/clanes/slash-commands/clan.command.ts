@@ -14,6 +14,9 @@ import {
 import { ClanService } from "../services/clan.service"
 import { CommandContext } from "@/core/types"
 import { IClan, IClanInvitation } from "@org/mongo"
+import { botLogger } from "@/core/logger"
+
+const clanLogger = botLogger.child("clanes")
 
 export class ClanCommand extends BaseCommand {
 	protected service = ClanService.getInstance()
@@ -86,7 +89,7 @@ export class ClanCommand extends BaseCommand {
 		try {
 			const dmEmbed = new EmbedBuilder()
 				.setColor(0x5865f2)
-				.setTitle("📨 Invitación a Clan")
+				.setTitle("📨 Invitación a clan")
 				.setDescription(
 					`Has sido invitado a unirte al clan **${clan.name}** ${clan.icon}\n\n` +
 					`Invitado por: <@${userId}>\n` +
@@ -110,7 +113,13 @@ export class ClanCommand extends BaseCommand {
 
 			await targetUser.send({ embeds: [dmEmbed], components: [buttons] })
 		} catch (error) {
-			console.error("Error enviando DM:", error)
+			clanLogger.error(
+				`Error enviando DM a ${targetUser.id}: `, error instanceof Error ? error.message : String(error)
+			)
+			throw new Error(
+				"No se pudo enviar la invitación por DM. " +
+				"El usuario podría tener los DMs desactivados."
+			)
 		}
 	}
 
@@ -123,7 +132,15 @@ export class ClanCommand extends BaseCommand {
 	}): Promise<void> {
 		const { interaction, result, targetUser, clan, userId } = params
 		if (result.success && result.invitation) {
-			await this.sendInvitationDM(targetUser, clan, userId, result.invitation)
+			try {
+				await this.sendInvitationDM(targetUser, clan, userId, result.invitation)
+			} catch (error) {
+				interaction.editReply({
+					embeds: [this.buildErrorEmbed((error as Error).message)]
+				})
+				await this.service.cancelInvitation(result.invitation._id.toString())
+				return
+			}
 			const embed = this.buildSuccessEmbed(
 				"Invitación enviada",
 				`Se ha enviado una invitación a **${targetUser.username}** para unirse al clan **${clan.name}**.`
@@ -176,7 +193,6 @@ export class ClanCommand extends BaseCommand {
 			userId: targetUser.id,
 			invitedBy: userId
 		})
-
 		await this.handleInvitationResult({ interaction, result, targetUser, clan, userId })
 	}
 

@@ -1108,6 +1108,17 @@ export class ClanService {
 		return { success: true }
 	}
 
+	async cancelInvitation (invitationId: string): Promise<void> {
+		const invitation = await ClanInvitationModel.findById(invitationId)
+		if (!invitation) {
+			return
+		}
+
+		invitation.status = ClanInvitationStatus.CANCELED
+		invitation.respondedAt = new Date()
+		await invitation.save()
+	}
+
 	async getClanByMember (guildId: string, userId: string): Promise<IClan | null> {
 		return await ClanModel.findOne({ guildId, members: userId, isActive: true })
 	}

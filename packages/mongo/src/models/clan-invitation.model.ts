@@ -4,7 +4,8 @@ export enum ClanInvitationStatus {
 	PENDING = "pending",
 	ACCEPTED = "accepted",
 	REJECTED = "rejected",
-	EXPIRED = "expired"
+	EXPIRED = "expired",
+	CANCELED = "canceled"
 }
 
 export interface IClanInvitation extends Document {
