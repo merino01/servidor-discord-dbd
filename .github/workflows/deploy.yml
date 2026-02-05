@@ -3,8 +3,7 @@ name: Deploy to Production
 on:
   push:
     branches:
-      - main
-      - master
+      - prod
 
 jobs:
   deploy:
@@ -20,7 +19,24 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             bash -lc "
+            set -e
+
             cd ~/dev/servidor-discord-dbd
+
+            echo '🧰 Cargando FNM...'
+            export FNM_PATH=\"/home/dbduser/.local/share/fnm\"
+            export PATH=\"\$FNM_PATH:\$PATH\"
+
+            if command -v fnm >/dev/null 2>&1; then
+              eval \"\$(fnm env)\"
+              fnm use 22.21.1
+            else
+              echo '❌ fnm no encontrado'
+              exit 1
+            fi
+
+            echo '🟢 Node:' \$(node -v)
+            echo '🟢 NPM:' \$(npm -v)
 
             echo '📥 Obteniendo últimos cambios...'
             git pull
