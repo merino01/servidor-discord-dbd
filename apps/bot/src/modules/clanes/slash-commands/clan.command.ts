@@ -138,6 +138,7 @@ export class ClanCommand extends BaseCommand {
 				interaction.editReply({
 					embeds: [this.buildErrorEmbed((error as Error).message)]
 				})
+				await this.service.cancelInvitation(result.invitation._id.toString())
 				return
 			}
 			const embed = this.buildSuccessEmbed(
@@ -192,7 +193,6 @@ export class ClanCommand extends BaseCommand {
 			userId: targetUser.id,
 			invitedBy: userId
 		})
-
 		await this.handleInvitationResult({ interaction, result, targetUser, clan, userId })
 	}
 
