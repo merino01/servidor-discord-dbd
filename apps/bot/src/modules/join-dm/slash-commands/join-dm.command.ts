@@ -8,12 +8,12 @@ import { APIEmbed, MessageFlags } from "discord.js"
 
 const joinDmlogger = botLogger.child("joinDmCommand")
 
-export class  JoinDmCommand extends BaseCommand {
+export class JoinDmCommand extends BaseCommand {
 	protected override async run (context: CommandContext): Promise<void> {
 		const { interaction } = context
-		const enabled = interaction.options.getBoolean("activar",false) ?? true
-		const message = interaction.options.getString("mensaje", false)
-		const embedString = interaction.options.getString("embed", false)
+		const enabled = interaction.options.getBoolean("activar") ?? true
+		const message = interaction.options.getString("mensaje")
+		const embedString = interaction.options.getString("embed")
 
 		if (!message && !embedString) {
 			await interaction.reply({
@@ -23,15 +23,19 @@ export class  JoinDmCommand extends BaseCommand {
 			return
 		}
 
-		const { embed, error } = this.validateEmbed(embedString ?? "")
+		let embed: APIEmbed | null = null
+		if (embedString) {
+			const { embed: validatedEmbed, error } = this.validateEmbed(embedString)
+			if (error) {
+				await interaction.reply({
+					content: error.message,
+					flags: MessageFlags.Ephemeral
+				})
+				return
+			}
 
-		if (error) {
-			await interaction.reply({
-				content: error.message,
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
+			embed = validatedEmbed
+		 }
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
@@ -40,11 +44,14 @@ export class  JoinDmCommand extends BaseCommand {
 				{
 					guildId: interaction.guild!.id
 				},
-				{ guildId: interaction.guild!.id,
+				{
+					guildId: interaction.guild!.id,
 					message,
-					embed: embedString ? embed : null,
+					embed,
 					enabled
-				}, { upsert: true, new: true })
+				},
+				{ upsert: true, new: true }
+			)
 			await interaction.editReply({
 				embeds: [this.buildConfirmationEmbed(enabled)]
 			})
@@ -71,14 +78,14 @@ export class  JoinDmCommand extends BaseCommand {
 		return embed
 	}
 
-	private validateEmbed (embedString: string): {embed: APIEmbed | null, error: Error | null} {
+	private validateEmbed (embedString: string): { embed: APIEmbed | null, error: Error | null } {
 		try {
 			const embedJSON = JSON.parse(embedString)
 			const embed = new EmbedBuilder(embedJSON).toJSON()
 
 			return { embed, error: null }
 		} catch (error) {
-			console.log("Error al parsear el embed:", error)
+			joinDmlogger.warn("Embed no válido proporcionado: ", error instanceof Error ? error.message : String(error))
 			return {
 				embed: null,
 				error: new Error("El embed proporcionado no es un JSON válido.")
