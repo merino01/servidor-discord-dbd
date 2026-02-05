@@ -3,8 +3,7 @@ name: Deploy to Production
 on:
   push:
     branches:
-      - main
-      - master
+      - prod
 
 jobs:
   deploy:
@@ -21,6 +20,14 @@ jobs:
           script: |
             bash -lc "
             cd ~/dev/servidor-discord-dbd
+
+            echo '🧰 Cargando Node/FNM...'
+            FNM_PATH="/home/dbduser/.local/share/fnm"
+            if [ -d "$FNM_PATH" ]; then
+              export PATH="$FNM_PATH:$PATH"
+              eval "`fnm env`"
+            fi
+            command -v fnm >/dev/null 2>&1 && eval \"$(fnm env --use-on-cd)\" && fnm use --lts
 
             echo '📥 Obteniendo últimos cambios...'
             git pull
