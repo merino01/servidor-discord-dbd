@@ -113,7 +113,7 @@ export class EchoCommand extends BaseCommand {
 			}
 		}
 
-		const targetChannel = interaction.options.getChannel("canal")
+		const targetChannel = interaction.options.getChannel("canal") ?? interaction.channel as TextChannel
 		const message = interaction.options.getString("mensaje")
 		const embedJson = interaction.options.getString("embed")
 
@@ -189,7 +189,7 @@ registerCommand(EchoCommand, {
 			name: "canal",
 			description: "Canal donde enviar el mensaje",
 			type: OptionType.CHANNEL,
-			required: true
+			required: false
 		},
 		{
 			name: "mensaje",
