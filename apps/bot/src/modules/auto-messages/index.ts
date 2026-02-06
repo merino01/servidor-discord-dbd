@@ -5,5 +5,5 @@ import { AutoMessageService } from "./services/auto-message.service"
 
 const service = AutoMessageService.getInstance()
 service.initialize().catch((error) => {
-	console.error("Error al inicializar servicio de mensajes automáticos:", error)
+	console.error("Error al inicializar servicio de mensajes automáticos: ", error)
 })
