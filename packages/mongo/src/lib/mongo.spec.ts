@@ -1,7 +1,7 @@
-import { mongo } from './mongo.js';
+import { mongo } from "./mongo.js"
 
-describe('mongo', () => {
-  it('should work', () => {
-    expect(mongo()).toEqual('mongo');
-  });
-});
+describe("mongo", () => {
+	it("should work", () => {
+		expect(mongo()).toEqual("mongo")
+	})
+})
