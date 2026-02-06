@@ -609,6 +609,9 @@ export class ClanService {
 		const channelNumber = clan.voiceChannelIds.length + 1
 		const channelName = `${clan.icon} ${clan.name} #${channelNumber}`
 		const voicePerms = getChannelPermissions("voice", config.leaderRoleId, guild.id, role.id)
+		const lastVoiceChannel = guild.channels.cache.get(
+			clan.voiceChannelIds[clan.voiceChannelIds.length - 1]
+		) as VoiceChannel | undefined
 
 		const voiceChannel = await guild.channels.create({
 			name: channelName,
@@ -616,6 +619,9 @@ export class ClanService {
 			parent: categoryVoice.id,
 			permissionOverwrites: voicePerms
 		})
+		if (lastVoiceChannel) {
+			voiceChannel.setPosition(lastVoiceChannel.position + 1)
+		}
 
 		return voiceChannel.id
 	}
