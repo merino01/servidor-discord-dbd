@@ -2,14 +2,14 @@ import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext, OptionType } from "@/core/types"
 import { ClaimConfigModel } from "@org/mongo"
-import { CategoryChannel, ChannelType, EmbedBuilder, MessageFlags, PermissionFlagsBits, User } from "discord.js"
+import { ChannelType, EmbedBuilder, MessageFlags, PermissionFlagsBits } from "discord.js"
 
 export class ClaimConfigCommand extends BaseCommand {
 
 	private infoEmbed (categories: [ string ]): EmbedBuilder  {
 		let description = "Categorías configuradas:"
 		for (const categoryId of categories) {
-			description += `\n <#${categoryId}`
+			description += `\n <#${categoryId}>`
 		}
 
 		const embed = new EmbedBuilder({
@@ -19,15 +19,16 @@ export class ClaimConfigCommand extends BaseCommand {
 	}
 
 	public async añadirCategoria ({ interaction }: CommandContext) {
-		const category = interaction.options.getChannel("category", true)
+		const category = interaction.options.getChannel("categoria", true)
 
 		if (category.type !== ChannelType.GuildCategory) {
-			return await interaction.reply(
+			await interaction.reply(
 				{
 					content: "Selecciona una categoría válida.",
 					flags: MessageFlags.Ephemeral
 				}
 			)
+			return
 		}
 
 		await interaction.deferReply()
@@ -50,6 +51,9 @@ export class ClaimConfigCommand extends BaseCommand {
 		} catch (error) {
 			// TEMPORAL
 			console.log(error)
+			await interaction.editReply({
+				content: "Ha ocurrido un error al actualizar la configuración."
+			})
 		}
 	}
 }
