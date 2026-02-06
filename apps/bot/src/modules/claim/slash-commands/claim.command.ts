@@ -69,7 +69,7 @@ export class ClaimCommand extends BaseCommand {
 			}
 		}
 
-		// Cambiar permisos del ticket??
+		// Cambiar permisos del ticket + cambiar nombre
 		await interaction.editReply({
 			embeds: [ this.responseEmbed(interaction.user, categoryError) ]
 		})
