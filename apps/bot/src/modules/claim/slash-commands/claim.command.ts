@@ -29,11 +29,12 @@ export class ClaimCommand extends BaseCommand {
 
 		const config = await ClaimConfigModel.findOne(
 			{
-				guildId
+				guildId,
+				categoryId
 			}
 		)
 
-		if (!config || !config.categories.includes(categoryId)) {
+		if (!config) {
 			return invalidError
 		}
 
@@ -56,7 +57,7 @@ export class ClaimCommand extends BaseCommand {
 				{
 					$inc: { ticket_count: 1 },
 					last_ticket_claimed: channelName,
-					last_ticket_date: Date.now()
+					last_ticket_date: new Date()
 				},
 				{
 					upsert: true, new: true

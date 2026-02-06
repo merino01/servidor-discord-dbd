@@ -14,7 +14,7 @@ const ClaimSchema = new Schema<IClaimModel>(
 		userId: { type: String, unique: true, required: true, index: true },
 		ticket_count: { type: Number, default: 0 },
 		last_ticket_claimed: { type: String },
-		last_ticket_date: { type: Date, default: Date.now() }
+		last_ticket_date: { type: Date, default: new Date() }
 	}
 )
 

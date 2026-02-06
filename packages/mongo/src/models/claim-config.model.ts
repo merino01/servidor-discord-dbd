@@ -2,13 +2,13 @@ import { Document, model, Schema } from "mongoose"
 
 export interface IClaimConfigModel extends Document {
 	guildId: string,
-	categories: [string]
+	categoryId: string
 }
 
 const ClaimConfigSchema = new Schema<IClaimConfigModel>(
 	 {
-		guildId: { type: String, required: true, unique: true, index: true },
-		categories: { type: [String], default: [] }
+		guildId: { type: String, required: true, index: true },
+		categoryId: { type: String, required: true }
 	 }
 )
 

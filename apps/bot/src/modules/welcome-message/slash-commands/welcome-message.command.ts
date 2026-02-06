@@ -3,12 +3,12 @@ import { registerCommand } from "@/core/command-register"
 import { botLogger } from "@/core/logger"
 import { CommandContext, OptionType } from "@/core/types"
 import { EmbedBuilder } from "@discordjs/builders"
-import { JoinDmModel } from "@org/mongo"
+import { WelcomeMessageModel } from "@org/mongo"
 import { APIEmbed, MessageFlags, PermissionFlagsBits } from "discord.js"
 
-const joinDmlogger = botLogger.child("joinDmCommand")
+const welcomeMessageLogger = botLogger.child("welcome-message-command")
 
-export class JoinDmCommand extends BaseCommand {
+export class WelcomeMessageCommand extends BaseCommand {
 	protected override async run (context: CommandContext): Promise<void> {
 		const { interaction } = context
 		const enabled = interaction.options.getBoolean("activar") ?? true
@@ -40,7 +40,7 @@ export class JoinDmCommand extends BaseCommand {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
 		try {
-			await JoinDmModel.findOneAndUpdate(
+			await WelcomeMessageModel.findOneAndUpdate(
 				{
 					guildId: interaction.guild!.id
 				},
@@ -55,7 +55,7 @@ export class JoinDmCommand extends BaseCommand {
 				embeds: [this.buildConfirmationEmbed(enabled)]
 			})
 		} catch (e) {
-			joinDmlogger.error("Error al actualizar la configuración de mensajes directos al unirse:", e)
+			welcomeMessageLogger.error("Error al actualizar la configuración de mensajes directos al unirse:", e)
 			await interaction.editReply({
 				content: "Ha ocurrido un error al actualizar la configuración. Por favor, inténtalo de nuevo más tarde."
 			})
@@ -84,7 +84,10 @@ export class JoinDmCommand extends BaseCommand {
 
 			return { embed, error: null }
 		} catch (error) {
-			joinDmlogger.warn("Embed no válido proporcionado: ", error instanceof Error ? error.message : String(error))
+			welcomeMessageLogger.warn("Embed no válido proporcionado: ",
+				 error instanceof Error
+				  ? error.message
+					: String(error))
 			return {
 				embed: null,
 				error: new Error("El embed proporcionado no es un JSON válido.")
@@ -93,8 +96,8 @@ export class JoinDmCommand extends BaseCommand {
 	}
 }
 
-registerCommand(JoinDmCommand, {
-	name: "join-dm",
+registerCommand(WelcomeMessageCommand, {
+	name: "welcome-message",
 	description: "Configura el sistema de mensajes directos al unirse al servidor",
 	permissions: PermissionFlagsBits.Administrator,
 	guildOnly: true,
