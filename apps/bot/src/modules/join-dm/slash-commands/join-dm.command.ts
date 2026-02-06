@@ -4,7 +4,7 @@ import { botLogger } from "@/core/logger"
 import { CommandContext, OptionType } from "@/core/types"
 import { EmbedBuilder } from "@discordjs/builders"
 import { JoinDmModel } from "@org/mongo"
-import { APIEmbed, MessageFlags } from "discord.js"
+import { APIEmbed, MessageFlags, PermissionFlagsBits } from "discord.js"
 
 const joinDmlogger = botLogger.child("joinDmCommand")
 
@@ -45,7 +45,6 @@ export class JoinDmCommand extends BaseCommand {
 					guildId: interaction.guild!.id
 				},
 				{
-					guildId: interaction.guild!.id,
 					message,
 					embed,
 					enabled
@@ -97,6 +96,8 @@ export class JoinDmCommand extends BaseCommand {
 registerCommand(JoinDmCommand, {
 	name: "join-dm",
 	description: "Configura el sistema de mensajes directos al unirse al servidor",
+	permissions: PermissionFlagsBits.Administrator,
+	guildOnly: true,
 	options: [
 		{
 			name: "activar",

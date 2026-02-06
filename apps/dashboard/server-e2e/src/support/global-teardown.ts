@@ -1,4 +1,4 @@
-import { killPort } from '@nx/node/utils';
+import { killPort } from "@nx/node/utils"
 /* eslint-disable */
 
 module.exports = async function () {
