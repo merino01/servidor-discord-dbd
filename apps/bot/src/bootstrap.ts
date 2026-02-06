@@ -15,6 +15,7 @@ import "./modules/clanes"
 import "./modules/notificator"
 import "./modules/random-channel"
 import "./modules/join-dm"
+import "./modules/claim"
 
 export async function startBot () {
 	await connectMongo()
