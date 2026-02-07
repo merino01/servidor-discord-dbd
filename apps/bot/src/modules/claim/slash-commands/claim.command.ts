@@ -1,7 +1,15 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand } from "@/core/command-register"
 import { CommandContext } from "@/core/types"
-import { EmbedBuilder, GuildTextBasedChannel, PermissionFlagsBits, User } from "discord.js"
+import {
+	Collection,
+	EmbedBuilder,
+	GuildTextBasedChannel,
+	Message,
+	PermissionFlagsBits,
+	TextChannel,
+	User
+} from "discord.js"
 import { ClaimConfigModel, ClaimModel } from "@org/mongo"
 import { botLogger } from "@/core/logger"
 
@@ -41,44 +49,77 @@ export class ClaimCommand extends BaseCommand {
 		return null
 	}
 
+	private async getMessages (channel: TextChannel): Promise<Collection<string, Message<true>>>{
+		const messages = await channel.messages.fetch({
+			limit: 3,
+			after: "0"
+		})
+
+		return messages.reverse()
+	}
+
+	private getAffectedUserId (messageContent: Message<true>): string | null {
+		const digitRegex = /\d/g
+		const userId = messageContent?.content?.match(digitRegex)?.join("")
+
+		return userId ?? null
+	}
+
+	private getReason (messageContent: Message<true>): string | null {
+		const reasonRegex = /```([\s\S]*?)```/
+		const reason = messageContent?.embeds[0]?.description?.match(reasonRegex)
+
+		if (!reason) {
+			return null
+		}
+
+		return reason[1]
+	}
+
 	protected override async run (context: CommandContext): Promise<void> {
 		const { interaction } = context
-		const { name: channelName, parentId } = interaction.channel as GuildTextBasedChannel
+		const channel = interaction.channel as GuildTextBasedChannel
+		const { parentId } = channel
 
 		await interaction.deferReply()
 
 		const categoryError = await this.validateCategory(interaction.guild!.id, parentId)
 		if (!categoryError) {
 			try {
-				await ClaimModel.findOneAndUpdate({
-					guildId: interaction.guildId,
-					userId: interaction.user.id
-				},
-				{
-					$inc: { ticket_count: 1 },
-					last_ticket_claimed: channelName,
-					last_ticket_date: new Date()
-				},
-				{
-					upsert: true, new: true
+				let affectedUserId: string | null = null
+				let reason: string | null = null
+
+				const messages = await this.getMessages(channel as TextChannel)
+				const firstMessage = messages.first()
+				const thirdMessage = messages.at(2)
+
+				if (firstMessage) {
+					affectedUserId = this.getAffectedUserId(firstMessage)
 				}
+				if (thirdMessage) {
+					reason = this.getReason(thirdMessage)
+				}
+
+				await ClaimModel.insertOne(
+					{
+						guildId: interaction.guild?.id,
+						moderatorId: interaction.user.id,
+						affectedUserId,
+						ticketReason: reason
+					}
 				)
 			} catch (error) {
 				ClaimLogger.error(
-					"Error al actualizar el número de tickets:", error instanceof Error ? error?.message : String(error)
+					"Error al reclamar el ticket:", error instanceof Error ? error?.message : String(error)
 				)
 			}
 		}
 
-		// Cambiar permisos del ticket + cambiar nombre
+		// TO DO: Cambiar permisos
 		await interaction.editReply({
 			embeds: [ this.responseEmbed(interaction.user, categoryError) ]
 		})
 
-	}
-
-	public config () {
-		console.log("config")
 	}
 }
 
