@@ -34,5 +34,10 @@
       }
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "mongoose": "^9.1.2",
+    "@org/config": "0.0.1",
+    "@org/logger": "0.0.1",
+    "discord.js": "14.25.1"
+  }
 }

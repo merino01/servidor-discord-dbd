@@ -166,69 +166,55 @@ export abstract class BaseCommand implements ICommand {
 		const subcommands = getSubCommandsMetadata(this.constructor)
 		const groups = getSubCommandGroupsMetadata(this.constructor)
 
-		// Si hay grupos, organizar los subcomandos por grupos
-		if (groups.length > 0) {
-			for (const group of groups) {
-				this.data.addSubcommandGroup((grp) => {
-					grp.setName(group.name).setDescription(group.description)
-
-					// Agregar subcomandos que pertenecen a este grupo
-					const groupSubcommands = subcommands.filter(
-						(sc) => sc.group === group.name
-					)
-
-					for (const subcommand of groupSubcommands) {
-						grp.addSubcommand((sub) => {
-							sub
-								.setName(subcommand.name)
-								.setDescription(subcommand.description)
-
-							// Agregar opciones si existen
-							if (subcommand.options?.length) {
-								for (const option of subcommand.options) {
-									this.addSubcommandOption(sub, option)
-								}
-							}
-
-							return sub
-						})
-					}
-
-					return grp
-				})
+		const addOptionsToSubcommand = (sub: any, options?: any[]): void => {
+			if (!options?.length) {
+				return
 			}
 
-			// Agregar subcomandos sin grupo (si existen)
-			const ungroupedSubcommands = subcommands.filter((sc) => !sc.group)
-			for (const subcommand of ungroupedSubcommands) {
-				this.data.addSubcommand((sub) => {
-					sub.setName(subcommand.name).setDescription(subcommand.description)
-
-					if (subcommand.options?.length) {
-						for (const option of subcommand.options) {
-							this.addSubcommandOption(sub, option)
-						}
-					}
-
-					return sub
-				})
+			for (const option of options) {
+				this.addSubcommandOption(sub, option)
 			}
-		} else {
+		}
+
+		const addSubcommand = (target: any, subcommand: any): void => {
+			target.addSubcommand((sub: any) => {
+				sub
+					.setName(subcommand.name)
+					.setDescription(subcommand.description)
+
+				addOptionsToSubcommand(sub, subcommand.options)
+				return sub
+			})
+		}
+
+		if (groups.length === 0) {
 			// Sin grupos, agregar subcomandos directamente
 			for (const subcommand of subcommands) {
-				this.data.addSubcommand((sub) => {
-					sub.setName(subcommand.name).setDescription(subcommand.description)
-
-					// Agregar opciones si existen
-					if (subcommand.options?.length) {
-						for (const option of subcommand.options) {
-							this.addSubcommandOption(sub, option)
-						}
-					}
-
-					return sub
-				})
+				addSubcommand(this.data, subcommand)
 			}
+			return
+		}
+
+		for (const group of groups) {
+			this.data.addSubcommandGroup((grp: any) => {
+				grp.setName(group.name).setDescription(group.description)
+
+				const groupSubcommands = subcommands.filter(
+					(sc) => sc.group === group.name
+				)
+
+				for (const subcommand of groupSubcommands) {
+					addSubcommand(grp, subcommand)
+				}
+
+				return grp
+			})
+		}
+
+		// Agregar subcomandos sin grupo (si existen)
+		const ungroupedSubcommands = subcommands.filter((sc) => !sc.group)
+		for (const subcommand of ungroupedSubcommands) {
+			addSubcommand(this.data, subcommand)
 		}
 	}
 

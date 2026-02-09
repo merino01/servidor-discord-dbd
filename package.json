@@ -3,8 +3,24 @@
 	"version": "0.0.0",
 	"license": "MIT",
 	"scripts": {
+		"dev:all": "nx run-many -t serve --parallel",
+		"dev:client": "nx serve @org/client",
+		"dev:server": "nx serve @org/server",
 		"dev:bot": "nx serve @org/bot",
-		"build": "nx run-many -t build"
+		"build:all": "nx run-many -t build",
+		"build:client": "nx build @org/client",
+		"build:server": "nx build @org/server",
+		"build:bot": "nx build @org/bot",
+		"lint:all": "nx run-many -t lint",
+		"lint:client": "nx lint @org/client",
+		"lint:server": "nx lint @org/server",
+		"lint:bot": "nx lint @org/bot",
+		"lint:affected": "nx affected -t lint",
+		"test:all": "nx run-many -t test",
+		"test:client": "nx test @org/client",
+		"test:server": "nx test @org/server",
+		"test:bot": "nx test @org/bot",
+		"prepare": "husky"
 	},
 	"private": true,
 	"devDependencies": {
@@ -56,7 +72,8 @@
 		"typescript-eslint": "^8.40.0",
 		"vite": "^7.0.0",
 		"vitest": "^4.0.0",
-		"vue-tsc": "^2.2.8"
+		"vue-tsc": "^2.2.8",
+		"husky": "^9.1.7"
 	},
 	"workspaces": [
 		"packages/*",
