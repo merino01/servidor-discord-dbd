@@ -24,7 +24,7 @@ export class ClaimCommand extends BaseCommand {
 		const embed = new EmbedBuilder({
 			description: error
 				? "Ha habido un error asignando el ticket."
-				: `El ticket ha sido asignado por <@${user.id}>.`,
+				: `El ticket ha sido asignado a <@${user.id}>.`,
 			color: error ? 0xed4245 : 0x57f287
 		})
 		return embed
@@ -79,7 +79,8 @@ export class ClaimCommand extends BaseCommand {
 		const newPermissions: OverwriteResolvable[] = [
 			{
 				id: moderatorRoleId,
-				deny: "SendMessages"
+				deny: "SendMessages",
+				allow: "ViewChannel"
 			},
 			{
 				id: moderatorId,
@@ -117,7 +118,7 @@ export class ClaimCommand extends BaseCommand {
 			const firstMessage = messages.first()
 
 			const affectedUserId = firstMessage ? this.getAffectedUserId(firstMessage) : null
-			const reason = firstMessage ? this.getAffectedUserId(firstMessage) : null
+			const reason = firstMessage ? this.getReason(firstMessage) : null
 
 			await ClaimModel.insertOne({
 				guildId: interaction.guild?.id,
