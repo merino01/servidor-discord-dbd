@@ -79,12 +79,12 @@ export class ClaimCommand extends BaseCommand {
 		const newPermissions: OverwriteResolvable[] = [
 			{
 				id: moderatorRoleId,
-				deny: "SendMessages",
-				allow: "ViewChannel"
+				deny: PermissionFlagsBits.SendMessages,
+				allow: PermissionFlagsBits.ViewChannel
 			},
 			{
 				id: moderatorId,
-				allow: ["SendMessages", "ViewChannel"]
+				allow: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ViewChannel]
 			}
 		]
 
