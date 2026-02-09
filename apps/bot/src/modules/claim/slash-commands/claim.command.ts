@@ -71,7 +71,7 @@ export class ClaimCommand extends BaseCommand {
 			return null
 		}
 
-		return reason[1]
+		return reason[1].trim()
 	}
 
 	private async changeChannelPermissions (channel: TextChannel, moderatorId: string) : Promise<void> {
