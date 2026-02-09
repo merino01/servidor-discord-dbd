@@ -5,11 +5,11 @@ import { CommandContext, OptionType } from "@/core/types"
 import { ClaimConfigModel } from "@org/mongo"
 import { ChannelType, EmbedBuilder, GuildChannel, MessageFlags, PermissionFlagsBits } from "discord.js"
 
-const ClaimLogger = botLogger.child("claim-config")
+const claimLogger = botLogger.child("claim-config")
 
 export class ClaimConfigCommand extends BaseCommand {
 
-	private infoEmbed (categories: string[]): EmbedBuilder  {
+	private createInfoEmbed (categories: string[]): EmbedBuilder  {
 		let description = "Categorías configuradas:"
 		for (const categoryId of categories) {
 			description += `\n <#${categoryId}>`
@@ -21,20 +21,17 @@ export class ClaimConfigCommand extends BaseCommand {
 		return embed
 	}
 
-	private validateCategory (category : ChannelType): string | null {
-		if (category !== ChannelType.GuildCategory) {
-			return "La categoría seleccionada no es válida"
-		}
-		return null
+	private isValidCategory (category : ChannelType): boolean {
+		return category === ChannelType.GuildCategory
 	}
 
 	public async añadirCategoria ({ interaction }: CommandContext) {
 		const category = interaction.options.getChannel("categoria", true) as GuildChannel
-		const messageError = this.validateCategory(category.type)
+		const valid = this.isValidCategory(category.type)
 
-		if (messageError) {
+		if (!valid) {
 			await interaction.reply({
-				content: messageError,
+				content: "La categoría seleccionada no es válida.",
 				flags: MessageFlags.Ephemeral
 			})
 			return
@@ -48,13 +45,13 @@ export class ClaimConfigCommand extends BaseCommand {
 				categoryId: category.id
 			})
 
-			const embed = this.infoEmbed([category.id])
+			const embed = this.createInfoEmbed([category.id])
 
 			await interaction.editReply({
 				embeds: [ embed ]
 			})
 		} catch (error) {
-			ClaimLogger.error(error instanceof Error ? error?.message : String(error))
+			claimLogger.error(error instanceof Error ? error?.message : String(error))
 			await interaction.editReply({
 				content: "Ha ocurrido un error al actualizar la configuración."
 			})
@@ -82,7 +79,7 @@ export class ClaimConfigCommand extends BaseCommand {
 			return
 		}
 
-		const embed = this.infoEmbed(categories)
+		const embed = this.createInfoEmbed(categories)
 		await interaction.editReply({
 			embeds: [embed]
 		})
@@ -90,10 +87,10 @@ export class ClaimConfigCommand extends BaseCommand {
 
 	public async eliminarCategoria ( { interaction }: CommandContext) {
 		const category = interaction.options.getChannel("categoria", true)
-		const messageError = this.validateCategory(category.type)
-		if (messageError) {
+		const valid = this.isValidCategory(category.type)
+		if (!valid) {
 			await interaction.reply({
-				content: messageError,
+				content: "Selecciona una categoría valida.",
 				flags: MessageFlags.Ephemeral
 			})
 			return
@@ -102,19 +99,17 @@ export class ClaimConfigCommand extends BaseCommand {
 		await interaction.deferReply()
 
 		try {
-			await ClaimConfigModel.findOneAndDelete(
-				{
-					guildId: interaction.guild?.id,
-					categoryId: category.id
-				}
-			)
+			await ClaimConfigModel.findOneAndDelete({
+				guildId: interaction.guild?.id,
+				categoryId: category.id
+			})
 
 			await interaction.editReply({
 				content: `Se ha eliminado la categoría <#${category.id}> de la configuración.`
 			})
 
 		} catch (error) {
-			ClaimLogger.error("Error al intentar eliminar la categoria:", error)
+			claimLogger.error("Error al intentar eliminar la categoria:", error)
 			await interaction.editReply({
 				content: "Ha habido un error al eliminar la categoría"
 			})

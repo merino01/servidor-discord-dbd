@@ -10,16 +10,14 @@ export interface IClaimModel extends Document {
 	unclaimedAt: Date | null
 }
 
-const ClaimSchema = new Schema<IClaimModel>(
-	{
-		guildId: { type: String, required: true },
-		moderatorId: { type: String, required: true },
-		affectedUserId: { type: String, default: null },
-		ticketReason: { type: String, default: null },
-		ticketId: { type: String, required: true },
-		claimedAt: { type: Date, default: new Date() },
-		unclaimedAt: { type: Date, default: null }
-	}
-)
+const ClaimSchema = new Schema<IClaimModel>({
+	guildId: { type: String, required: true },
+	moderatorId: { type: String, required: true },
+	affectedUserId: { type: String, default: null },
+	ticketReason: { type: String, default: null },
+	ticketId: { type: String, required: true },
+	claimedAt: { type: Date, default: new Date() },
+	unclaimedAt: { type: Date, default: null }
+})
 
 export const ClaimModel = model<IClaimModel>("claim", ClaimSchema)

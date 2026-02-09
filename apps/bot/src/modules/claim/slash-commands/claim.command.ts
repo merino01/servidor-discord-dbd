@@ -14,42 +14,37 @@ import {
 } from "discord.js"
 import { ClaimConfigModel, ClaimModel } from "@org/mongo"
 import { botLogger } from "@/core/logger"
-import { moderatorRoleId } from "../utils/variables"
+import { moderatorRoleId } from "../constants"
 
-const ClaimLogger = botLogger.child("claim_command")
+const claimLogger = botLogger.child("claim_command")
 
 export class ClaimCommand extends BaseCommand {
 
-	private responseEmbed (user: User, error: Error | null): EmbedBuilder  {
-		const embed = new EmbedBuilder(
-			{
-				description: error
-					? "Ha habido un error asignando el ticket."
-					: `El ticket ha sido asignado por <@${user.id}>.`,
-				color: error ? 0xed4245 : 0x57f287
-			}
-		)
+	private createResponseEmbed (user: User, error: Error | null): EmbedBuilder {
+		const embed = new EmbedBuilder({
+			description: error
+				? "Ha habido un error asignando el ticket."
+				: `El ticket ha sido asignado por <@${user.id}>.`,
+			color: error ? 0xed4245 : 0x57f287
+		})
 		return embed
 	}
 
-	private async validateCategory (guildId: string, categoryId: string | null ): Promise<Error | null> {
-		const invalidError = new Error("El canal de texto no es válido.")
+	private async isValidCategory (guildId: string, categoryId: string | null ): Promise<boolean> {
 		if (!categoryId) {
-			return invalidError
+			return false
 		}
 
-		const config = await ClaimConfigModel.findOne(
-			{
-				guildId,
-				categoryId
-			}
-		)
+		const config = await ClaimConfigModel.findOne({
+			guildId,
+			categoryId
+		})
 
 		if (!config) {
-			return invalidError
+			return false
 		}
 
-		return null
+		return true
 	}
 
 	private async getMessages (channel: TextChannel): Promise<Collection<string, Message<true>>>{
@@ -58,7 +53,7 @@ export class ClaimCommand extends BaseCommand {
 			after: "0"
 		})
 
-		return messages.reverse()
+		return messages
 	}
 
 	private getAffectedUserId (messageContent: Message<true>): string | null {
@@ -105,8 +100,8 @@ export class ClaimCommand extends BaseCommand {
 
 		await interaction.deferReply()
 
-		const categoryError = await this.validateCategory(interaction.guild!.id, parentId)
-		if (categoryError) {
+		const valid = await this.isValidCategory(interaction.guild!.id, parentId)
+		if (!valid) {
 			await interaction.deleteReply()
 			await interaction.followUp({
 				flags: MessageFlags.Ephemeral,
@@ -118,28 +113,21 @@ export class ClaimCommand extends BaseCommand {
 		try {
 			await this.changeChannelPermissions(channel as TextChannel, interaction.user.id)
 
-			let affectedUserId: string | null = null
-			let reason: string | null = null
-
 			const messages = await this.getMessages(channel as TextChannel)
 			const firstMessage = messages.first()
 
-			if (firstMessage) {
-				affectedUserId = this.getAffectedUserId(firstMessage)
-				reason = this.getReason(firstMessage)
-			}
+			const affectedUserId = firstMessage ? this.getAffectedUserId(firstMessage) : null
+			const reason = firstMessage ? this.getAffectedUserId(firstMessage) : null
 
-			await ClaimModel.insertOne(
-				{
-					guildId: interaction.guild?.id,
-					moderatorId: interaction.user.id,
-					ticketId: channel.id,
-					affectedUserId,
-					ticketReason: reason
-				}
-			)
+			await ClaimModel.insertOne({
+				guildId: interaction.guild?.id,
+				moderatorId: interaction.user.id,
+				ticketId: channel.id,
+				affectedUserId,
+				ticketReason: reason
+			})
 		} catch (error) {
-			ClaimLogger.error(
+			claimLogger.error(
 				"Error al asignar el ticket:", error instanceof Error ? error?.message : String(error)
 			)
 
@@ -152,7 +140,7 @@ export class ClaimCommand extends BaseCommand {
 		}
 
 		await interaction.editReply({
-			embeds: [ this.responseEmbed(interaction.user, null) ]
+			embeds: [this.createResponseEmbed(interaction.user, null)]
 		})
 	}
 }

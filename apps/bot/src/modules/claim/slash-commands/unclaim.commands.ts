@@ -4,9 +4,9 @@ import { botLogger } from "@/core/logger"
 import { CommandContext } from "@/core/types"
 import { ClaimModel } from "@org/mongo"
 import { MessageFlags, PermissionFlagsBits, TextChannel } from "discord.js"
-import { moderatorRoleId } from "../utils/variables"
+import { moderatorRoleId } from "../constants"
 
-const UnclaimLogger = botLogger.child("unclaim_command")
+const unclaimLogger = botLogger.child("unclaim_command")
 
 export class UnClaimCommand extends BaseCommand {
 	private async changeChannelPermissions (channel: TextChannel, moderatorId: string) : Promise<void> {
@@ -24,19 +24,21 @@ export class UnClaimCommand extends BaseCommand {
 		try {
 			await this.changeChannelPermissions(interaction.channel as TextChannel, interaction.user.id)
 
-			await ClaimModel.findOneAndUpdate({
-				guildId: interaction.guild!.id,
-				ticketId: interaction.channel?.id
-			},
-			{
-				unclaimedAt: new Date()
-			})
+			await ClaimModel.findOneAndUpdate(
+				{
+					guildId: interaction.guild!.id,
+					ticketId: interaction.channel?.id
+				},
+				{
+					unclaimedAt: new Date()
+				}
+			)
 
 			await interaction.editReply({
 				content: "El ticket se ha desasingnado."
 			})
 		} catch (error) {
-			UnclaimLogger.error(error instanceof Error ? error.message : String(Error))
+			unclaimLogger.error(error instanceof Error ? error.message : String(Error))
 			await interaction.editReply({
 				content: "Ha ocurrido un error desasingnado el ticket"
 			})
