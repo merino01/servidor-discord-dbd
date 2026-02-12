@@ -3,15 +3,20 @@ import { registerCommand } from "@/core/command-register"
 import { CommandContext, OptionType } from "@types"
 import {
 	PermissionFlagsBits,
-	EmbedBuilder,
 	MessageFlags,
 	TextChannel,
 	ChannelType,
 	GuildBasedChannel,
 	APIInteractionDataResolvedChannel,
-	ChatInputCommandInteraction
+	ChatInputCommandInteraction,
+	ModalBuilder,
+	LabelBuilder,
+	TextInputStyle,
+	TextInputBuilder
 } from "discord.js"
 import { botLogger } from "@/core/logger"
+import { sendMessage } from "../utils/send-message"
+import { buildConfirmEmbed } from "../utils/embed"
 
 const echoLogger = botLogger.child("echo")
 
@@ -30,71 +35,12 @@ export class EchoCommand extends BaseCommand {
 		return null
 	}
 
-	private validateMessageContent (message: string | null, embed: string | null): string | null {
-		if (!message && !embed) {
+	private validateMessageContent (message: string | null, embed: string | null, text: boolean | null): string | null {
+		if (!message && !embed && !text) {
 			return "❌ Debes proporcionar al menos un mensaje de texto o un embed."
 		}
 
 		return null
-	}
-
-	private parseEmbed (embedJson: string): { embed: EmbedBuilder; error: string | null } {
-		try {
-			const parsed = JSON.parse(embedJson)
-			const embed = new EmbedBuilder(parsed)
-			return { embed, error: null }
-		} catch {
-			return {
-				embed: new EmbedBuilder(),
-				error: "❌ El JSON del embed es inválido. Asegúrate de que sea un JSON válido."
-			}
-		}
-	}
-
-	private async sendMessage (
-		channel: TextChannel,
-		message: string | null,
-		embedJson: string | null
-	): Promise<{ success: boolean; error?: string }> {
-		const messagePayload: { content?: string; embeds?: EmbedBuilder[] } = {}
-
-		if (message) {
-			messagePayload.content = message
-		}
-
-		if (embedJson) {
-			const { embed, error } = this.parseEmbed(embedJson)
-			if (error) {
-				return { success: false, error }
-			}
-			messagePayload.embeds = [embed]
-		}
-
-		try {
-			await channel.send(messagePayload)
-			return { success: true }
-		} catch {
-			return {
-				success: false,
-				error: "❌ Error al enviar el mensaje. Verifica los permisos del bot en ese canal."
-			}
-		}
-	}
-
-	private buildConfirmEmbed (
-		channelId: string,
-		username: string,
-		hasEmbed: boolean
-	): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0x00ff00)
-			.setTitle("✅ Mensaje enviado")
-			.addFields(
-				{ name: "Canal", value: `<#${channelId}>`, inline: true },
-				{ name: "Tipo", value: hasEmbed ? "Embed" : "Texto", inline: true }
-			)
-			.setFooter({ text: `Enviado por ${username}` })
-			.setTimestamp()
 	}
 
 	private async validateAndGetInputs (
@@ -103,6 +49,7 @@ export class EchoCommand extends BaseCommand {
 		success: boolean
 		channel?: TextChannel
 		message?: string | null
+		text?: boolean | null
 		embedJson?: string | null
 		error?: string
 	}> {
@@ -116,13 +63,14 @@ export class EchoCommand extends BaseCommand {
 		const targetChannel = interaction.options.getChannel("canal") ?? interaction.channel as TextChannel
 		const message = interaction.options.getString("mensaje")
 		const embedJson = interaction.options.getString("embed")
+		const text = interaction.options.getBoolean("texto")
 
 		const channelError = this.validateChannel(targetChannel)
 		if (channelError) {
 			return { success: false, error: channelError }
 		}
 
-		const contentError = this.validateMessageContent(message, embedJson)
+		const contentError = this.validateMessageContent(message, embedJson, text)
 		if (contentError) {
 			return { success: false, error: contentError }
 		}
@@ -131,8 +79,25 @@ export class EchoCommand extends BaseCommand {
 			success: true,
 			channel: targetChannel as TextChannel,
 			message,
+			text,
 			embedJson
 		}
+	}
+
+	private createModal (channelId: string): ModalBuilder {
+		const modal = new ModalBuilder().setCustomId(`echo_modal_${channelId}`).setTitle("Echo")
+		const textInput = new TextInputBuilder()
+			.setCustomId("echo_modal_text")
+			.setRequired(true)
+			.setStyle(TextInputStyle.Paragraph)
+
+		const title = new LabelBuilder()
+			.setLabel("Texto a enviar")
+			.setTextInputComponent(textInput)
+
+		modal.addLabelComponents(title)
+
+		return modal
 	}
 
 	override async run (context: CommandContext): Promise<void> {
@@ -147,8 +112,14 @@ export class EchoCommand extends BaseCommand {
 			return
 		}
 
-		const { channel, message, embedJson } = validation
-		const result = await this.sendMessage(
+		const { channel, message, embedJson, text } = validation
+		if (text) {
+			const modal =  this.createModal(channel.id)
+			await interaction.showModal(modal)
+			return
+		}
+
+		const result = await sendMessage(
 			channel,
 			message ?? null,
 			embedJson ?? null
@@ -162,7 +133,7 @@ export class EchoCommand extends BaseCommand {
 			return
 		}
 
-		const confirmEmbed = this.buildConfirmEmbed(
+		const confirmEmbed = buildConfirmEmbed(
 			channel.id,
 			interaction.user.tag,
 			embedJson !== null && embedJson !== undefined
@@ -201,6 +172,12 @@ registerCommand(EchoCommand, {
 			name: "embed",
 			description: "El embed en formato JSON a enviar",
 			type: OptionType.STRING,
+			required: false
+		},
+		{
+			name: "texto",
+			description: "Se abrirá un formulario donde poder enviar un texto",
+			type: OptionType.BOOLEAN,
 			required: false
 		}
 	]
