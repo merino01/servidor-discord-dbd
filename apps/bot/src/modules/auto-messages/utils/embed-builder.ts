@@ -31,6 +31,22 @@ function addDeletionInfo (embed: EmbedBuilder, autoMessage: IAutoMessage): void 
 	}
 }
 
+export function addCategoryExtraInfo (embed: EmbedBuilder, autoMessage: IAutoMessage): void {
+	if (autoMessage.waitTime !== null) {
+		embed.addFields([
+			{
+				name: "Tiempo de espera",
+				value: `${autoMessage.waitTime} segundos`
+			},
+			{
+				name: "Anclado",
+				value: autoMessage.pin ? ":white_check_mark: Activado" : ":x: Desactivado",
+				inline: true
+			}
+		])
+	}
+}
+
 /**
  * Construye un embed con la información detallada de un mensaje automático
  */
@@ -77,6 +93,7 @@ export function buildAutoMessageInfoEmbed (autoMessage: IAutoMessage): EmbedBuil
 		})
 	}
 
+	addCategoryExtraInfo(embed, autoMessage)
 	addDeletionInfo(embed, autoMessage)
 
 	embed.setFooter({ text: `ID: ${autoMessage._id}` })

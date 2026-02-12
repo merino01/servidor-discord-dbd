@@ -51,6 +51,7 @@ async function sendCategoryAutoMessages (channel: TextChannel, creator?: User): 
 			? [replaceVariablesInEmbed(autoMessage.embed, { channel, guild: channel.guild, creator })]
 			: []
 
+		const time = (autoMessage.waitTime ?? 0) * 1000
 		setTimeout(async () => {
 			const setMessage = await channel.send({
 				content: message,
@@ -59,7 +60,7 @@ async function sendCategoryAutoMessages (channel: TextChannel, creator?: User): 
 			if (autoMessage.pin) {
 				await setMessage.pin()
 			}
-		}, autoMessage.waitTime)
+		}, time)
 	}
 }
 

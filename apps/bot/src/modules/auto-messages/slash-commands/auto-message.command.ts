@@ -17,7 +17,7 @@ import { AutoMessageModel, AutoMessageTargetType, IAutoMessage } from "@org/mong
 import { botLogger } from "@/core/logger"
 import { AutoMessageService } from "../services/auto-message.service"
 import { getVariablesList } from "../allowed-variables"
-import { buildAutoMessageInfoEmbed } from "../utils/embed-builder"
+import { addCategoryExtraInfo, buildAutoMessageInfoEmbed } from "../utils/embed-builder"
 
 const autoMessageLogger = botLogger.child("auto-messages")
 
@@ -114,6 +114,8 @@ export class AutoMessageCommand extends BaseCommand {
 			embed.addFields({ name: "Cron", value: `\`${autoMessage.cronExpression}\``, inline: true })
 		}
 
+		addCategoryExtraInfo(embed, autoMessage)
+
 		embed.addFields(
 			{
 				name: "Destino",
@@ -154,7 +156,7 @@ export class AutoMessageCommand extends BaseCommand {
 			embed: messageEmbedParsed,
 			cronExpression: params.cronExpression,
 			targetType: params.targetType,
-			waitTime: params?.waitTime ? params.waitTime * 1000 : 0,
+			waitTime: params?.targetType === AutoMessageTargetType.CATEGORY ? params.waitTime ?? 0 : null,
 			pin: params.pin,
 			targetId: params.targetId,
 			createdBy: params.userId
