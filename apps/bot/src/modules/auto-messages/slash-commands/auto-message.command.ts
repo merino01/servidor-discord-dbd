@@ -143,6 +143,7 @@ export class AutoMessageCommand extends BaseCommand {
 		targetId: string;
 		userId: string;
 		waitTime: number | null;
+		pin: boolean
 	}): Promise<IAutoMessage> {
 		const messageEmbedParsed = params.messageEmbed ? JSON.parse(params.messageEmbed) : null
 
@@ -154,6 +155,7 @@ export class AutoMessageCommand extends BaseCommand {
 			cronExpression: params.cronExpression,
 			targetType: params.targetType,
 			waitTime: params?.waitTime ? params.waitTime * 1000 : 0,
+			pin: params.pin,
 			targetId: params.targetId,
 			createdBy: params.userId
 		})
@@ -184,6 +186,7 @@ export class AutoMessageCommand extends BaseCommand {
 		const channel = interaction.options.getChannel("canal")
 		const category = interaction.options.getChannel("categoria")
 		const waitTime = interaction.options.getInteger("tiempo")
+		const pin = interaction.options.getBoolean("anclar") ?? false
 
 		const validationError = this.validateTargetSelection(channel, category, cronExpression)
 		if (validationError) {
@@ -207,6 +210,7 @@ export class AutoMessageCommand extends BaseCommand {
 				targetType,
 				targetId,
 				waitTime,
+				pin,
 				userId: interaction.user.id
 			})
 
@@ -630,6 +634,12 @@ registerSubCommand(AutoMessageCommand, "crear", {
 			name: "tiempo",
 			description: "Tiempo de espera para enviar un mensaje tras la creación de un canal (en segundos)",
 			type: OptionType.INTEGER,
+			required: false
+		},
+		{
+			name: "anclar",
+			description: "Anclar los mensajes automaticos que se envian al crear un canal",
+			type: OptionType.BOOLEAN,
 			required: false
 		}
 	]

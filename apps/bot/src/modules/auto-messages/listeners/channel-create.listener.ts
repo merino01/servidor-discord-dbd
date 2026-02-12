@@ -52,10 +52,13 @@ async function sendCategoryAutoMessages (channel: TextChannel, creator?: User): 
 			: []
 
 		setTimeout(async () => {
-			await channel.send({
+			const setMessage = await channel.send({
 				content: message,
 				embeds
 			})
+			if (autoMessage.pin) {
+				await setMessage.pin()
+			}
 		}, autoMessage.waitTime)
 	}
 }
