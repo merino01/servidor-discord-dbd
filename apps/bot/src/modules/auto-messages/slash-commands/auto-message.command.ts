@@ -21,6 +21,14 @@ import { addCategoryExtraInfo, buildAutoMessageInfoEmbed } from "../utils/embed-
 
 const autoMessageLogger = botLogger.child("auto-messages")
 
+interface CreateOptions {
+		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
+		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
+		cronExpression: string | null,
+		message: string | null,
+		messageEmbed: string | null
+	}
+
 export class AutoMessageCommand extends BaseCommand {
 
 	private validateCronExpression (expression: string): boolean {
@@ -69,10 +77,17 @@ export class AutoMessageCommand extends BaseCommand {
 		return null
 	}
 
-	private validateTargetSelection (
-		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
-		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
-		cronExpression: string | null
+	private validateMessage (
+		message: string | null,
+		embed: string | null
+	): string | null {
+		if (!message && !embed) {
+			return "❌ Tienes que especificar un mensaje o un embed."
+		}
+		return null
+	}
+
+	private validateTargetSelection ({ channel, category, cronExpression, message, messageEmbed }: CreateOptions
 	): string | null {
 		const channelCategoryError = this.validateChannelOrCategory(channel, category)
 		if (channelCategoryError) {return channelCategoryError}
@@ -82,6 +97,9 @@ export class AutoMessageCommand extends BaseCommand {
 
 		const categoryTypeError = this.validateCategoryType(category)
 		if (categoryTypeError) {return categoryTypeError}
+
+		const messageError = this.validateMessage(message, messageEmbed)
+		if (messageError) {return messageError}
 
 		if (cronExpression && !this.validateCronExpression(cronExpression)) {
 			return "❌ Expresión cron inválida. Formato: `segundo minuto hora día mes díaSemana`" +
@@ -190,7 +208,9 @@ export class AutoMessageCommand extends BaseCommand {
 		const waitTime = interaction.options.getInteger("tiempo")
 		const pin = interaction.options.getBoolean("anclar") ?? false
 
-		const validationError = this.validateTargetSelection(channel, category, cronExpression)
+		const validationError = this.validateTargetSelection
+		({ channel, category, cronExpression, message, messageEmbed })
+
 		if (validationError) {
 			await interaction.reply({
 				content: validationError,
@@ -215,7 +235,6 @@ export class AutoMessageCommand extends BaseCommand {
 				pin,
 				userId: interaction.user.id
 			})
-
 			const embed = this.buildCreatedEmbed(autoMessage)
 
 			autoMessageLogger.info(`Mensaje automático creado: ${name} en guild ${interaction.guildId}`)
