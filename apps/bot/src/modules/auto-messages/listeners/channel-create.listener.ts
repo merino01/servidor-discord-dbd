@@ -51,10 +51,12 @@ async function sendCategoryAutoMessages (channel: TextChannel, creator?: User): 
 			? [replaceVariablesInEmbed(autoMessage.embed, { channel, guild: channel.guild, creator })]
 			: []
 
-		await channel.send({
-			content: message,
-			embeds
-		})
+		setTimeout(async () => {
+			await channel.send({
+				content: message,
+				embeds
+			})
+		}, autoMessage.waitTime)
 	}
 }
 

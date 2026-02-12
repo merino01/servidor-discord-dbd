@@ -142,6 +142,7 @@ export class AutoMessageCommand extends BaseCommand {
 		targetType: AutoMessageTargetType;
 		targetId: string;
 		userId: string;
+		waitTime: number | null;
 	}): Promise<IAutoMessage> {
 		const messageEmbedParsed = params.messageEmbed ? JSON.parse(params.messageEmbed) : null
 
@@ -152,6 +153,7 @@ export class AutoMessageCommand extends BaseCommand {
 			embed: messageEmbedParsed,
 			cronExpression: params.cronExpression,
 			targetType: params.targetType,
+			waitTime: params?.waitTime ? params.waitTime * 1000 : 0,
 			targetId: params.targetId,
 			createdBy: params.userId
 		})
@@ -181,6 +183,7 @@ export class AutoMessageCommand extends BaseCommand {
 		const cronExpression = interaction.options.getString("cron")
 		const channel = interaction.options.getChannel("canal")
 		const category = interaction.options.getChannel("categoria")
+		const waitTime = interaction.options.getInteger("tiempo")
 
 		const validationError = this.validateTargetSelection(channel, category, cronExpression)
 		if (validationError) {
@@ -203,6 +206,7 @@ export class AutoMessageCommand extends BaseCommand {
 				cronExpression,
 				targetType,
 				targetId,
+				waitTime,
 				userId: interaction.user.id
 			})
 
@@ -620,6 +624,12 @@ registerSubCommand(AutoMessageCommand, "crear", {
 			name: "categoria",
 			description: "Categoría donde enviar el mensaje (a todos los canales de texto)",
 			type: OptionType.CHANNEL,
+			required: false
+		},
+		{
+			name: "tiempo",
+			description: "Tiempo de espera para enviar un mensaje tras la creación de un canal (en segundos)",
+			type: OptionType.INTEGER,
 			required: false
 		}
 	]
