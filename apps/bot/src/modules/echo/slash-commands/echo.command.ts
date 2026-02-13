@@ -114,7 +114,7 @@ export class EchoCommand extends BaseCommand {
 
 		const { channel, message, embedJson, text } = validation
 		if (text) {
-			const modal =  this.createModal(channel.id)
+			const modal = this.createModal(channel.id)
 			await interaction.showModal(modal)
 			return
 		}

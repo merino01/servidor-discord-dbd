@@ -2,6 +2,9 @@ import { registerModal } from "@/core/components/component-registry"
 import { MessageFlags, ModalSubmitInteraction, TextChannel } from "discord.js"
 import { sendMessage } from "../utils/send-message"
 import { buildConfirmEmbed } from "../utils/embed"
+import { botLogger } from "@/core/logger"
+
+const echoLogger = botLogger.child("echo")
 
 registerModal("echo_modal", async (interaction: ModalSubmitInteraction) => {
 	const message = interaction.fields.getTextInputValue("echo_modal_text")
@@ -33,7 +36,7 @@ registerModal("echo_modal", async (interaction: ModalSubmitInteraction) => {
 		flags: MessageFlags.Ephemeral
 	})
 
-	// echoLogger.info(
-	// 	`User ${interaction.user.id} sent echo message to channel ${channel.id} in guild ${interaction.guildId}`
-	// )
+	echoLogger.info(
+		`User ${interaction.user.id} sent echo message to channel ${channel.id} in guild ${interaction.guildId}`
+	)
 })
