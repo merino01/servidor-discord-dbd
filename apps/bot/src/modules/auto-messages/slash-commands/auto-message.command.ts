@@ -87,15 +87,13 @@ export class AutoMessageCommand extends BaseCommand {
 		return null
 	}
 
-	private validateTargetSelection (
-		{
-			channel,
-			category,
-			cronExpression,
-			message,
-			messageEmbed
-		}: CreateOptions
-	): string | null {
+	private validateTargetSelection ({
+		channel,
+		category,
+		cronExpression,
+		message,
+		messageEmbed
+	}: CreateOptions): string | null {
 		const channelCategoryError = this.validateChannelOrCategory(channel, category)
 		if (channelCategoryError) { return channelCategoryError }
 
