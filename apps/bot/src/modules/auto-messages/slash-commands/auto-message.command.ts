@@ -17,9 +17,17 @@ import { AutoMessageModel, AutoMessageTargetType, IAutoMessage } from "@org/mong
 import { botLogger } from "@/core/logger"
 import { AutoMessageService } from "../services/auto-message.service"
 import { getVariablesList } from "../allowed-variables"
-import { buildAutoMessageInfoEmbed } from "../utils/embed-builder"
+import { addCategoryExtraInfo, buildAutoMessageInfoEmbed } from "../utils/embed-builder"
 
 const autoMessageLogger = botLogger.child("auto-messages")
+
+interface CreateOptions {
+		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
+		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
+		cronExpression: string | null,
+		message: string | null,
+		messageEmbed: string | null
+	}
 
 export class AutoMessageCommand extends BaseCommand {
 
@@ -69,19 +77,34 @@ export class AutoMessageCommand extends BaseCommand {
 		return null
 	}
 
-	private validateTargetSelection (
-		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
-		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
-		cronExpression: string | null
+	private validateMessage (
+		message: string | null,
+		embed: string | null
 	): string | null {
+		if (!message && !embed) {
+			return "❌ Tienes que especificar un mensaje o un embed."
+		}
+		return null
+	}
+
+	private validateTargetSelection ({
+		channel,
+		category,
+		cronExpression,
+		message,
+		messageEmbed
+	}: CreateOptions): string | null {
 		const channelCategoryError = this.validateChannelOrCategory(channel, category)
-		if (channelCategoryError) {return channelCategoryError}
+		if (channelCategoryError) { return channelCategoryError }
 
 		const cronRequirementsError = this.validateCronRequirements(channel, category, cronExpression)
-		if (cronRequirementsError) {return cronRequirementsError}
+		if (cronRequirementsError) { return cronRequirementsError }
 
 		const categoryTypeError = this.validateCategoryType(category)
-		if (categoryTypeError) {return categoryTypeError}
+		if (categoryTypeError) { return categoryTypeError }
+
+		const messageError = this.validateMessage(message, messageEmbed)
+		if (messageError) { return messageError }
 
 		if (cronExpression && !this.validateCronExpression(cronExpression)) {
 			return "❌ Expresión cron inválida. Formato: `segundo minuto hora día mes díaSemana`" +
@@ -114,6 +137,8 @@ export class AutoMessageCommand extends BaseCommand {
 			embed.addFields({ name: "Cron", value: `\`${autoMessage.cronExpression}\``, inline: true })
 		}
 
+		addCategoryExtraInfo(embed, autoMessage)
+
 		embed.addFields(
 			{
 				name: "Destino",
@@ -142,6 +167,8 @@ export class AutoMessageCommand extends BaseCommand {
 		targetType: AutoMessageTargetType;
 		targetId: string;
 		userId: string;
+		waitTime: number | null;
+		pin: boolean
 	}): Promise<IAutoMessage> {
 		const messageEmbedParsed = params.messageEmbed ? JSON.parse(params.messageEmbed) : null
 
@@ -152,6 +179,8 @@ export class AutoMessageCommand extends BaseCommand {
 			embed: messageEmbedParsed,
 			cronExpression: params.cronExpression,
 			targetType: params.targetType,
+			waitTime: params?.targetType === AutoMessageTargetType.CATEGORY ? params.waitTime ?? 0 : null,
+			pin: params.pin,
 			targetId: params.targetId,
 			createdBy: params.userId
 		})
@@ -162,6 +191,29 @@ export class AutoMessageCommand extends BaseCommand {
 		}
 
 		return autoMessage
+	}
+
+	private getCrearOptions (interaction: ChatInputCommandInteraction) {
+		return {
+			name: interaction.options.getString("nombre", true),
+			message: interaction.options.getString("mensaje"),
+			messageEmbed: interaction.options.getString("embed"),
+			cronExpression: interaction.options.getString("cron"),
+			channel: interaction.options.getChannel("canal"),
+			category: interaction.options.getChannel("categoria"),
+			waitTime: interaction.options.getInteger("tiempo"),
+			pin: interaction.options.getBoolean("anclar") ?? false
+		}
+	}
+
+	private async handleCrearSuccess (
+		interaction: ChatInputCommandInteraction,
+		name: string,
+		autoMessage: IAutoMessage
+	): Promise<void> {
+		const embed = this.buildCreatedEmbed(autoMessage)
+		autoMessageLogger.info(`Mensaje automático creado: ${name} en guild ${interaction.guildId}`)
+		await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
 	}
 
 	async crear (context: CommandContext): Promise<void> {
@@ -175,14 +227,16 @@ export class AutoMessageCommand extends BaseCommand {
 			return
 		}
 
-		const name = interaction.options.getString("nombre", true)
-		const message = interaction.options.getString("mensaje")
-		const messageEmbed = interaction.options.getString("embed")
-		const cronExpression = interaction.options.getString("cron")
-		const channel = interaction.options.getChannel("canal")
-		const category = interaction.options.getChannel("categoria")
+		const options = this.getCrearOptions(interaction)
 
-		const validationError = this.validateTargetSelection(channel, category, cronExpression)
+		const validationError = this.validateTargetSelection({
+			channel: options.channel,
+			category: options.category,
+			cronExpression: options.cronExpression,
+			message: options.message,
+			messageEmbed: options.messageEmbed
+		})
+
 		if (validationError) {
 			await interaction.reply({
 				content: validationError,
@@ -192,25 +246,23 @@ export class AutoMessageCommand extends BaseCommand {
 		}
 
 		try {
-			const targetType = channel ? AutoMessageTargetType.CHANNEL : AutoMessageTargetType.CATEGORY
-			const targetId = channel ? channel.id : (category?.id as string)
+			const targetType = options.channel ? AutoMessageTargetType.CHANNEL : AutoMessageTargetType.CATEGORY
+			const targetId = (options.channel ? options.channel.id : options.category?.id) as string
 
 			const autoMessage = await this.createAutoMessage({
 				guildId: interaction.guildId,
-				name,
-				message,
-				messageEmbed,
-				cronExpression,
+				name: options.name,
+				message: options.message,
+				messageEmbed: options.messageEmbed,
+				cronExpression: options.cronExpression,
 				targetType,
 				targetId,
+				waitTime: options.waitTime,
+				pin: options.pin,
 				userId: interaction.user.id
 			})
 
-			const embed = this.buildCreatedEmbed(autoMessage)
-
-			autoMessageLogger.info(`Mensaje automático creado: ${name} en guild ${interaction.guildId}`)
-
-			await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
+			await this.handleCrearSuccess(interaction, options.name, autoMessage)
 		} catch (error) {
 			autoMessageLogger.error("Error al crear mensaje automático:", error)
 			await interaction.reply({
@@ -620,6 +672,18 @@ registerSubCommand(AutoMessageCommand, "crear", {
 			name: "categoria",
 			description: "Categoría donde enviar el mensaje (a todos los canales de texto)",
 			type: OptionType.CHANNEL,
+			required: false
+		},
+		{
+			name: "tiempo",
+			description: "Tiempo de espera para enviar un mensaje tras la creación de un canal (en segundos)",
+			type: OptionType.INTEGER,
+			required: false
+		},
+		{
+			name: "anclar",
+			description: "Anclar los mensajes automaticos que se envian al crear un canal",
+			type: OptionType.BOOLEAN,
 			required: false
 		}
 	]
