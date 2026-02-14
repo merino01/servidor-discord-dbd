@@ -13,6 +13,8 @@ export interface IAutoMessage extends Document {
   cronExpression: string | null;
   targetType: AutoMessageTargetType;
   targetId: string;
+	waitTime: number | null;
+	pin: boolean;
   createdBy: string;
   createdAt: Date;
   updatedAt?: Date;
@@ -31,6 +33,8 @@ const AutoMessageSchema = new Schema<IAutoMessage>({
 	cronExpression: { type: String, default: null },
 	targetType: { type: String, enum: Object.values(AutoMessageTargetType), required: true },
 	targetId: { type: String, required: true },
+	waitTime: { type: Number, default: null },
+	pin: { type: Boolean, default: false },
 	createdBy: { type: String, required: true },
 	createdAt: { type: Date, default: Date.now },
 	updatedAt: { type: Date },

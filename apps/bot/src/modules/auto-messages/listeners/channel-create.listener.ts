@@ -51,10 +51,29 @@ async function sendCategoryAutoMessages (channel: TextChannel, creator?: User): 
 			? [replaceVariablesInEmbed(autoMessage.embed, { channel, guild: channel.guild, creator })]
 			: []
 
-		await channel.send({
-			content: message,
-			embeds
-		})
+		if (!autoMessage.waitTime) {
+			sendMessageAndPin(channel, message, embeds, autoMessage.pin)
+			return
+		}
+
+		setTimeout(async () => {
+			sendMessageAndPin(channel, message, embeds, autoMessage.pin)
+		}, autoMessage.waitTime * 1000)
+	}
+}
+
+async function sendMessageAndPin (
+	channel: TextChannel,
+	message: string,
+	embeds:Record<string, unknown>[],
+	pin: boolean
+): Promise<void> {
+	const setMessage = await channel.send({
+		content: message,
+		embeds
+	})
+	if (pin) {
+		await setMessage.pin()
 	}
 }
 
