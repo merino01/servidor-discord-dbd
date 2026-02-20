@@ -34,7 +34,6 @@ async function ajustMemberRolesCron () {
 
 async function ajustRolesFromMember ({
 	member,
-	clanService,
 	clanRoles,
 	additionalRoles,
 	dbClan,
@@ -49,20 +48,27 @@ async function ajustRolesFromMember ({
 	hasClanRole: boolean,
 	userRoles: Collection<string, Role>
 }) {
+	// Si está en la BD pero no tiene el rol del clan, se le pone el rol del clan
 	if (dbClan && !hasClanRole) {
-		await clanService.addMember(dbClan._id.toString(), member.id, "system")
-	} else if (!dbClan && hasClanRole) {
-		await member.roles.remove(clanRoles, "El usuario no pertenece a ningún clan en la base de datos")
+		await member.roles.add(dbClan.roleId, "Agregar rol de clan porque está en la BD")
+	}
+	// Si tiene el rol de clan pero no está en la BD, se le quita el rol de clan
+	if (!dbClan && hasClanRole) {
+		await member.roles.remove(clanRoles, "Quitar rol de clan porque no está en la BD")
 	}
 
+	// Roles adicionales
 	if (dbClan) {
+		// Si está en algún clan y no tiene los roles adicionales, se le ponen
 		const rolesToAdd = additionalRoles.filter((roleId) => !userRoles.has(roleId))
-		const rolesToRemove = additionalRoles.filter((roleId) => userRoles.has(roleId))
 		if (rolesToAdd.length > 0) {
-			await member.roles.add(rolesToAdd, "Agregar roles adicionales de clan")
+			await member.roles.add(rolesToAdd, "Agregar roles adicionales porque está en clan")
 		}
+	} else {
+		// Si no está en ningún clan pero tiene algún rol adicional, se le quita
+		const rolesToRemove = additionalRoles.filter((roleId) => userRoles.has(roleId))
 		if (rolesToRemove.length > 0) {
-			await member.roles.remove(rolesToRemove, "Eliminar roles adicionales de clan")
+			await member.roles.remove(rolesToRemove, "Quitar roles adicionales porque no está en clan")
 		}
 	}
 }
