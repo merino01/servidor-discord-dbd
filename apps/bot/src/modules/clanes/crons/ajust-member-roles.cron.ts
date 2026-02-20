@@ -34,7 +34,6 @@ async function ajustMemberRolesCron () {
 
 async function ajustRolesFromMember ({
 	member,
-	clanService,
 	clanRoles,
 	additionalRoles,
 	dbClan,
