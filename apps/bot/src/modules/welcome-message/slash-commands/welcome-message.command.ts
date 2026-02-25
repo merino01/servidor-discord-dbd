@@ -30,7 +30,7 @@ export class WelcomeMessageCommand extends BaseCommand {
 
 		if (enabled === null && !message && !embedString) {
 			await interaction.editReply({
-				content: "Debes proporcionar un mensaje o un embed."
+				content: "Debes proporcionar un mensaje, un embed o editar el estado"
 			})
 			return
 		}
