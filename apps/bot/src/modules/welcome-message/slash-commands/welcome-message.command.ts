@@ -2,58 +2,61 @@ import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand } from "@/core/command-register"
 import { botLogger } from "@/core/logger"
 import { CommandContext, OptionType } from "@/core/types"
-import { EmbedBuilder } from "@discordjs/builders"
-import { WelcomeMessageModel } from "@org/mongo"
-import { APIEmbed, MessageFlags, PermissionFlagsBits } from "discord.js"
+import { IWelcomeMessage, WelcomeMessageModel } from "@org/mongo"
+import { CacheType, ChatInputCommandInteraction, EmbedBuilder, MessageFlags, PermissionFlagsBits } from "discord.js"
 
-const welcomeMessageLogger = botLogger.child("welcome-message-command")
+const welcomeMessageLogger = botLogger.child("welcome-message")
+
+interface Options {
+	enabled: boolean | null
+	message: string | null
+	embedString: string |null
+}
 
 export class WelcomeMessageCommand extends BaseCommand {
 	protected override async run (context: CommandContext): Promise<void> {
 		const { interaction } = context
-		const enabled = interaction.options.getBoolean("activar") ?? true
+		const enabled = interaction.options.getBoolean("activar")
 		const message = interaction.options.getString("mensaje")
 		const embedString = interaction.options.getString("embed")
+		const remove = interaction.options.getBoolean("eliminar")
 
-		if (!message && !embedString) {
-			await interaction.reply({
-				content: "Debes proporcionar un mensaje o un embed.",
-				flags: MessageFlags.Ephemeral
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		if (remove) {
+			await this.handleRemove(interaction)
+			return
+		}
+
+		if (enabled === null && !message && !embedString) {
+			await interaction.editReply({
+				content: "Debes proporcionar un mensaje o un embed."
 			})
 			return
 		}
 
-		let embed: APIEmbed | null = null
-		if (embedString) {
-			const { embed: validatedEmbed, error } = this.validateEmbed(embedString)
-			if (error) {
-				await interaction.reply({
-					content: error.message,
-					flags: MessageFlags.Ephemeral
-				})
-				return
-			}
+		const config = await this.buildUpdate({
+			message,
+			enabled,
+			embedString
+		})
 
-			embed = validatedEmbed
-		 }
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+		if (config.error) {
+			await interaction.editReply({ content: config.error })
+			return
+		}
 
 		try {
-			await WelcomeMessageModel.findOneAndUpdate(
+			const update = await WelcomeMessageModel.findOneAndUpdate(
 				{
-					guildId: interaction.guild!.id
-				},
+					guildId: interaction.guild?.id
+				}
+				, config.newConfig,
 				{
-					message,
-					embed,
-					enabled
-				},
-				{ upsert: true, new: true }
+					upsert: true, new: true
+				}
 			)
-			await interaction.editReply({
-				embeds: [this.buildConfirmationEmbed(enabled)]
-			})
+			await interaction.editReply({ embeds: [this.buildConfirmationEmbed(update.enabled)] })
 		} catch (e) {
 			welcomeMessageLogger.error("Error al actualizar la configuración de mensajes directos al unirse:", e)
 			await interaction.editReply({
@@ -61,6 +64,18 @@ export class WelcomeMessageCommand extends BaseCommand {
 			})
 		}
 
+	}
+
+	private async handleRemove (interaction: ChatInputCommandInteraction<CacheType>): Promise<void> {
+		try {
+			await WelcomeMessageModel.deleteOne({ guildId: interaction.guildId })
+			await interaction.editReply({ content: "Configuración eliminada." })
+		} catch (e) {
+			welcomeMessageLogger.error("Error al eliminar la configuración:", e)
+			await interaction.editReply({
+				content: "Ha ocurrido un error al eliminar la configuración."
+			})
+		}
 	}
 
 	private buildConfirmationEmbed (enabled: boolean): EmbedBuilder {
@@ -77,11 +92,10 @@ export class WelcomeMessageCommand extends BaseCommand {
 		return embed
 	}
 
-	private validateEmbed (embedString: string): { embed: APIEmbed | null, error: Error | null } {
+	private validateEmbed (embedString: string): { embed: EmbedBuilder, error: string | null } {
 		try {
 			const embedJSON = JSON.parse(embedString)
-			const embed = new EmbedBuilder(embedJSON).toJSON()
-
+			const embed = new EmbedBuilder(embedJSON)
 			return { embed, error: null }
 		} catch (error) {
 			welcomeMessageLogger.warn("Embed no válido proporcionado: ",
@@ -89,11 +103,34 @@ export class WelcomeMessageCommand extends BaseCommand {
 				  ? error.message
 					: String(error))
 			return {
-				embed: null,
-				error: new Error("El embed proporcionado no es un JSON válido.")
+				embed: new EmbedBuilder(),
+				error:"El embed proporcionado no es un JSON válido."
 			}
 		}
 	}
+
+	private async buildUpdate ({
+		enabled,
+		message,
+		embedString
+	}: Options): Promise<{ newConfig: Partial<IWelcomeMessage>, error: string | null}> {
+
+		const newConfig: Partial<IWelcomeMessage> = {}
+		let error: string | null = null
+		if (enabled !== null) { newConfig.enabled = enabled  }
+
+		if (message) { newConfig.message = message }
+
+		if (embedString) {
+			const { embed: validatedEmbed, error: ValidationError } = this.validateEmbed(embedString)
+			newConfig.embed = validatedEmbed.data
+			error = ValidationError
+
+		}
+
+		return { newConfig, error }
+	}
+
 }
 
 registerCommand(WelcomeMessageCommand, {
@@ -104,7 +141,7 @@ registerCommand(WelcomeMessageCommand, {
 	options: [
 		{
 			name: "activar",
-			description: "Activa o desactiva el sistema de mensajes directos. (Por defecto, desactivado)",
+			description: "Activa o desactiva el sistema de mensajes directos. (Por defecto, activado)",
 			type: OptionType.BOOLEAN,
 			required: false
 		},
@@ -118,6 +155,12 @@ registerCommand(WelcomeMessageCommand, {
 			name: "embed",
 			description: "El embed que se enviará al usuario cuando se una (en formato JSON)",
 			type: OptionType.STRING,
+			required: false
+		},
+		{
+			name: "eliminar",
+			description: "Elimina la configuración. Al activar esta opción se ignoran los demás parámetros.",
+			type: OptionType.BOOLEAN,
 			required: false
 		}
 	]
