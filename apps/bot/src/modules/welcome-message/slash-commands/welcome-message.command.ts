@@ -1,9 +1,10 @@
 import { BaseCommand } from "@/core/base/base-command"
-import { registerCommand } from "@/core/command-register"
+import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { botLogger } from "@/core/logger"
 import { CommandContext, OptionType } from "@/core/types"
 import { IWelcomeMessage, WelcomeMessageModel } from "@org/mongo"
-import { CacheType, ChatInputCommandInteraction, EmbedBuilder, MessageFlags, PermissionFlagsBits } from "discord.js"
+import { EmbedBuilder, Interaction, InteractionReplyOptions, MessageFlags, PermissionFlagsBits } from "discord.js"
+import { createMessage } from "../util/messages"
 
 const welcomeMessageLogger = botLogger.child("welcome-message")
 
@@ -14,23 +15,19 @@ interface Options {
 }
 
 export class WelcomeMessageCommand extends BaseCommand {
-	protected override async run (context: CommandContext): Promise<void> {
+
+	public async configure (context: CommandContext) {
 		const { interaction } = context
 		const enabled = interaction.options.getBoolean("activar")
 		const message = interaction.options.getString("mensaje")
 		const embedString = interaction.options.getString("embed")
-		const remove = interaction.options.getBoolean("eliminar")
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		if (remove) {
-			await this.handleRemove(interaction)
-			return
-		}
-
-		if (enabled === null && !message && !embedString) {
+		const error = await this.validateFields(interaction.guildId, enabled, message, embedString)
+		if (error) {
 			await interaction.editReply({
-				content: "Debes proporcionar un mensaje, un embed o editar el estado"
+				content: error
 			})
 			return
 		}
@@ -50,8 +47,8 @@ export class WelcomeMessageCommand extends BaseCommand {
 			const update = await WelcomeMessageModel.findOneAndUpdate(
 				{
 					guildId: interaction.guild?.id
-				}
-				, config.newConfig,
+				},
+				config.newConfig,
 				{
 					upsert: true, new: true
 				}
@@ -66,7 +63,13 @@ export class WelcomeMessageCommand extends BaseCommand {
 
 	}
 
-	private async handleRemove (interaction: ChatInputCommandInteraction<CacheType>): Promise<void> {
+	public async remove (context: CommandContext) {
+		const { interaction } = context
+
+		await interaction.deferReply({
+			flags: MessageFlags.Ephemeral
+		})
+
 		try {
 			await WelcomeMessageModel.deleteOne({ guildId: interaction.guildId })
 			await interaction.editReply({ content: "Configuración eliminada." })
@@ -76,6 +79,68 @@ export class WelcomeMessageCommand extends BaseCommand {
 				content: "Ha ocurrido un error al eliminar la configuración."
 			})
 		}
+	}
+
+	public async view ({ interaction }: CommandContext) {
+		await interaction.deferReply({
+			flags: MessageFlags.Ephemeral
+		})
+		try {
+			const config = await WelcomeMessageModel.findOne({
+				guildId: interaction.guild!.id
+			})
+
+			if (!config) {
+				await interaction.editReply({
+					content: "No hay nada configurado, usa ``/welcome-message configurar`` para configurarlo"
+				})
+				return
+			}
+
+			await interaction.editReply({
+				content: "Configuración actual:",
+				embeds: [this.buildConfirmationEmbed(config.enabled)]
+			})
+
+			const message: InteractionReplyOptions = { ...createMessage(config), flags: MessageFlags.Ephemeral }
+			await interaction.followUp(message)
+		} catch (error) {
+			await interaction.editReply({
+				content: "Ha ocurrido un error inesperado."
+			})
+			welcomeMessageLogger.error(error instanceof Error ? error.message : String(error))
+		}
+	}
+
+	private async validateFields (
+		guildId: string | null,
+		enabled: boolean | null,
+		message: string | null,
+		embedString: string | null
+	): Promise<string | null> {
+		if (!guildId) {
+			return "Este comando solo puede usarse dentro de un servidor servidor"
+		}
+
+		let actualConfig: IWelcomeMessage | null
+
+		try {
+			actualConfig = await WelcomeMessageModel.findOne({
+				guildId
+			})
+		} catch (error) {
+			welcomeMessageLogger.error(error instanceof Error ? error.message : String(error))
+			return "Ha ocurrido un error inesperado"
+		}
+
+		if (!actualConfig?.message && !actualConfig?.embed && !message && !embedString) {
+			return "Debes proporcionar un mensaje o un embed por primera vez."
+		}
+
+		if (enabled === null && !message && !embedString) {
+			return "Debes proporcionar un mensaje, un embed o editar el estado."
+		}
+		return null
 	}
 
 	private buildConfirmationEmbed (enabled: boolean): EmbedBuilder {
@@ -125,19 +190,22 @@ export class WelcomeMessageCommand extends BaseCommand {
 			const { embed: validatedEmbed, error: ValidationError } = this.validateEmbed(embedString)
 			newConfig.embed = validatedEmbed.data
 			error = ValidationError
-
 		}
 
 		return { newConfig, error }
 	}
-
 }
 
 registerCommand(WelcomeMessageCommand, {
 	name: "welcome-message",
-	description: "Configura el sistema de mensajes directos al unirse al servidor",
+	description: "Mensajes que se envían al usuario al unirse al servidor",
 	permissions: PermissionFlagsBits.Administrator,
-	guildOnly: true,
+	guildOnly: true
+})
+
+registerSubCommand(WelcomeMessageCommand, "configure", {
+	name: "configurar",
+	description: "Configura el sistema de mensajes directos al unirse al servidor",
 	options: [
 		{
 			name: "activar",
@@ -156,12 +224,16 @@ registerCommand(WelcomeMessageCommand, {
 			description: "El embed que se enviará al usuario cuando se una (en formato JSON)",
 			type: OptionType.STRING,
 			required: false
-		},
-		{
-			name: "eliminar",
-			description: "Elimina la configuración. Al activar esta opción se ignoran los demás parámetros.",
-			type: OptionType.BOOLEAN,
-			required: false
 		}
 	]
+})
+
+registerSubCommand(WelcomeMessageCommand, "view", {
+	name: "ver",
+	description: "Muestra la configuración actual."
+})
+
+registerSubCommand(WelcomeMessageCommand, "remove", {
+	name: "eliminar",
+	description: "Elimina la configuración actual"
 })
