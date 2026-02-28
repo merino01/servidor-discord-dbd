@@ -3,7 +3,7 @@ import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { botLogger } from "@/core/logger"
 import { CommandContext, OptionType } from "@/core/types"
 import { IWelcomeMessage, WelcomeMessageModel } from "@org/mongo"
-import { EmbedBuilder, Interaction, InteractionReplyOptions, MessageFlags, PermissionFlagsBits } from "discord.js"
+import { EmbedBuilder, InteractionReplyOptions, MessageFlags, PermissionFlagsBits } from "discord.js"
 import { createMessage } from "../util/messages"
 
 const welcomeMessageLogger = botLogger.child("welcome-message")
@@ -133,10 +133,31 @@ export class WelcomeMessageCommand extends BaseCommand {
 			return "Ha ocurrido un error inesperado"
 		}
 
+		const firstTimeError = this.checkFirstTimeRequired(actualConfig, message, embedString)
+		if (firstTimeError) { return firstTimeError }
+
+		const provideError = this.checkProvideOrEdit(enabled, message, embedString)
+		if (provideError) { return provideError }
+
+		return null
+	}
+
+	private checkFirstTimeRequired (
+		actualConfig: IWelcomeMessage | null,
+		message: string | null,
+		embedString: string | null
+	): string | null {
 		if (!actualConfig?.message && !actualConfig?.embed && !message && !embedString) {
 			return "Debes proporcionar un mensaje o un embed por primera vez."
 		}
+		return null
+	}
 
+	private checkProvideOrEdit (
+		enabled: boolean | null,
+		message: string | null,
+		embedString: string | null
+	): string | null {
 		if (enabled === null && !message && !embedString) {
 			return "Debes proporcionar un mensaje, un embed o editar el estado."
 		}
