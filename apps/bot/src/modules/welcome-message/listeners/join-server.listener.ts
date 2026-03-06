@@ -8,12 +8,18 @@ const welcomeMessageListener = botLogger.child("welcome-message-listener")
 
 botEvents.on("member:join", async (member: GuildMember) => {
 	const config = await WelcomeMessageModel.findOne({ guildId: member.guild.id })
-	if (!config || !config.enabled || !config.message && !config.embed) {return}
+	if (!config || !config.enabled || !config.message && !config.embed) { return }
 
 	try {
 		const message = createMessage(config)
 
-		await member.send(message)
+		if (config.waitTime) {
+			setTimeout(async () => {
+				await member.send(message)
+			}, config.waitTime * 1000)
+		} else {
+			await member.send(message)
+		}
 
 	} catch (error) {
 		welcomeMessageListener.error(`Error al enviar mensaje directo a ${member.user.tag} (${member.id}):`, error)

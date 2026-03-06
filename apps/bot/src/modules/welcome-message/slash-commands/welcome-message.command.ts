@@ -11,7 +11,12 @@ const welcomeMessageLogger = botLogger.child("welcome-message")
 interface Options {
 	enabled: boolean | null
 	message: string | null
-	embedString: string |null
+	embedString: string | null
+	waitTime: number | null
+}
+
+interface ValidateOptions extends Options {
+	guildId: string | null
 }
 
 export class WelcomeMessageCommand extends BaseCommand {
@@ -21,10 +26,18 @@ export class WelcomeMessageCommand extends BaseCommand {
 		const enabled = interaction.options.getBoolean("activar")
 		const message = interaction.options.getString("mensaje")
 		const embedString = interaction.options.getString("embed")
+		const waitTime = interaction.options.getInteger("tiempo")
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		const error = await this.validateFields(interaction.guildId, enabled, message, embedString)
+		const error = await this.validateFields({
+			guildId: interaction.guild?.id ?? null,
+			enabled,
+			message,
+			embedString,
+			waitTime
+		})
+
 		if (error) {
 			await interaction.editReply({
 				content: error
@@ -35,7 +48,8 @@ export class WelcomeMessageCommand extends BaseCommand {
 		const config = await this.buildUpdate({
 			message,
 			enabled,
-			embedString
+			embedString,
+			waitTime
 		})
 
 		if (config.error) {
@@ -53,7 +67,7 @@ export class WelcomeMessageCommand extends BaseCommand {
 					upsert: true, new: true
 				}
 			)
-			await interaction.editReply({ embeds: [this.buildConfirmationEmbed(update.enabled)] })
+			await interaction.editReply({ embeds: [this.buildConfirmationEmbed(update.enabled, update.waitTime)] })
 		} catch (e) {
 			welcomeMessageLogger.error("Error al actualizar la configuración de mensajes directos al unirse:", e)
 			await interaction.editReply({
@@ -99,7 +113,7 @@ export class WelcomeMessageCommand extends BaseCommand {
 
 			await interaction.editReply({
 				content: "Configuración actual:",
-				embeds: [this.buildConfirmationEmbed(config.enabled)]
+				embeds: [this.buildConfirmationEmbed(config.enabled, config.waitTime)]
 			})
 
 			const message: InteractionReplyOptions = { ...createMessage(config), flags: MessageFlags.Ephemeral }
@@ -113,11 +127,13 @@ export class WelcomeMessageCommand extends BaseCommand {
 	}
 
 	private async validateFields (
-		guildId: string | null,
-		enabled: boolean | null,
-		message: string | null,
-		embedString: string | null
-	): Promise<string | null> {
+		{
+			embedString,
+			enabled,
+			guildId,
+			message,
+			waitTime
+		}: ValidateOptions): Promise<string | null> {
 		if (!guildId) {
 			return "Este comando solo puede usarse dentro de un servidor servidor"
 		}
@@ -136,7 +152,7 @@ export class WelcomeMessageCommand extends BaseCommand {
 		const firstTimeError = this.checkFirstTimeRequired(actualConfig, message, embedString)
 		if (firstTimeError) { return firstTimeError }
 
-		const provideError = this.checkProvideOrEdit(enabled, message, embedString)
+		const provideError = this.checkProvideOrEdit(enabled, message, embedString, waitTime)
 		if (provideError) { return provideError }
 
 		return null
@@ -156,15 +172,16 @@ export class WelcomeMessageCommand extends BaseCommand {
 	private checkProvideOrEdit (
 		enabled: boolean | null,
 		message: string | null,
-		embedString: string | null
+		embedString: string | null,
+		waitTime: number | null
 	): string | null {
-		if (enabled === null && !message && !embedString) {
+		if (enabled === null && waitTime === null && !message && !embedString) {
 			return "Debes proporcionar un mensaje, un embed o editar el estado."
 		}
 		return null
 	}
 
-	private buildConfirmationEmbed (enabled: boolean): EmbedBuilder {
+	private buildConfirmationEmbed (enabled: boolean, waitTime?: number | null): EmbedBuilder {
 		const embed = new EmbedBuilder()
 			.setColor(enabled ? 0x57f287 : 0xed4245)
 			.setTitle("Enviar dm a nuevos miembros")
@@ -173,8 +190,14 @@ export class WelcomeMessageCommand extends BaseCommand {
 					name: "Estado",
 					value: enabled ? "✅ Activado" : "❌ Desactivado",
 					inline: true
+				},
+				{
+					name: "Tiempo de espera",
+					value: `${waitTime} ${waitTime === 1 ? "segundo" : "segundos"}`,
+					inline: true
 				}
 			)
+
 		return embed
 	}
 
@@ -198,7 +221,8 @@ export class WelcomeMessageCommand extends BaseCommand {
 	private async buildUpdate ({
 		enabled,
 		message,
-		embedString
+		embedString,
+		waitTime
 	}: Options): Promise<{ newConfig: Partial<IWelcomeMessage>, error: string | null}> {
 
 		const newConfig: Partial<IWelcomeMessage> = {}
@@ -211,6 +235,10 @@ export class WelcomeMessageCommand extends BaseCommand {
 			const { embed: validatedEmbed, error: ValidationError } = this.validateEmbed(embedString)
 			newConfig.embed = validatedEmbed.data
 			error = ValidationError
+		}
+
+		if (waitTime !== null) {
+			newConfig.waitTime = waitTime
 		}
 
 		return { newConfig, error }
@@ -244,6 +272,12 @@ registerSubCommand(WelcomeMessageCommand, "configure", {
 			name: "embed",
 			description: "El embed que se enviará al usuario cuando se una (en formato JSON)",
 			type: OptionType.STRING,
+			required: false
+		},
+		{
+			name: "tiempo",
+			description: "Tiempo de espera desde que se une hasta que se envía el mensaje (en segundos)",
+			type: OptionType.INTEGER,
 			required: false
 		}
 	]
