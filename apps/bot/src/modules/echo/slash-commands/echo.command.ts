@@ -12,11 +12,13 @@ import {
 	ModalBuilder,
 	LabelBuilder,
 	TextInputStyle,
-	TextInputBuilder
+	TextInputBuilder,
+	CategoryChannel,
+	EmbedBuilder
 } from "discord.js"
 import { botLogger } from "@/core/logger"
 import { sendMessage } from "../utils/send-message"
-import { buildConfirmEmbed } from "../utils/embed"
+import { buildConfirmEmbed, buildErrorEmbed } from "../utils/embed"
 
 const echoLogger = botLogger.child("echo")
 
@@ -35,6 +37,16 @@ export class EchoCommand extends BaseCommand {
 		return null
 	}
 
+	private validateCategory (
+		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null
+	 ): string | null {
+		if (channel && channel?.type !== ChannelType.GuildCategory) {
+			return "❌ No es una categoría válida"
+		}
+
+		return null
+	 }
+
 	private validateMessageContent (message: string | null, embed: string | null, text: boolean | null): string | null {
 		if (!message && !embed && !text) {
 			return "❌ Debes proporcionar al menos un mensaje de texto o un embed."
@@ -51,6 +63,7 @@ export class EchoCommand extends BaseCommand {
 		message?: string | null
 		text?: boolean | null
 		embedJson?: string | null
+		category?: CategoryChannel | null
 		error?: string
 	}> {
 		if (!interaction.guildId) {
@@ -64,6 +77,12 @@ export class EchoCommand extends BaseCommand {
 		const message = interaction.options.getString("mensaje")
 		const embedJson = interaction.options.getString("embed")
 		const text = interaction.options.getBoolean("texto")
+		const category = interaction.options.getChannel("categoría")
+
+		const categoryError = this.validateCategory(category)
+		if (categoryError) {
+			return { success: false, error: categoryError }
+		}
 
 		const channelError = this.validateChannel(targetChannel)
 		if (channelError) {
@@ -78,6 +97,7 @@ export class EchoCommand extends BaseCommand {
 		return {
 			success: true,
 			channel: targetChannel as TextChannel,
+			category: category as CategoryChannel,
 			message,
 			text,
 			embedJson
@@ -100,6 +120,37 @@ export class EchoCommand extends BaseCommand {
 		return modal
 	}
 
+	private async sendMessageCategory (
+		category: CategoryChannel,
+		message?: string | null,
+		embedJson?: string | null
+	): Promise<EmbedBuilder> {
+		const channels = category.children
+		const embed = new EmbedBuilder()
+			.setTitle("✅ Mensaje enviado")
+			.setColor(0x00ff00)
+			.setTimestamp()
+
+		for (const channel of channels.cache) {
+			if (channel[1].type !== ChannelType.GuildText) {
+				continue
+			}
+
+			const result = await sendMessage(
+				channel[1],
+				message ?? null,
+				embedJson ?? null
+			)
+
+			embed.addFields({
+				name: "",
+				value: `<#${channel[1].id}> **-->** ${result.success ? "✅" : "❌" }`
+			})
+		}
+
+		return embed
+	}
+
 	override async run (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
@@ -112,40 +163,50 @@ export class EchoCommand extends BaseCommand {
 			return
 		}
 
-		const { channel, message, embedJson, text } = validation
+		const { channel, message, embedJson, text, category } = validation
+
 		if (text) {
 			const modal = this.createModal(channel.id)
 			await interaction.showModal(modal)
 			return
 		}
 
-		const result = await sendMessage(
-			channel,
-			message ?? null,
-			embedJson ?? null
-		)
+		if ( category ) {
+			const embed = await this.sendMessageCategory(category, message, embedJson)
 
-		if (!result.success) {
 			await interaction.reply({
-				content: result.error ?? "❌ Error desconocido",
+				embeds: [ embed ],
 				flags: MessageFlags.Ephemeral
 			})
-			return
+		} else {
+			const result = await sendMessage(
+				channel,
+				message ?? null,
+				embedJson ?? null
+			)
+
+			if (!result.success) {
+				await interaction.reply({
+					embeds: [buildErrorEmbed(channel.id)],
+					flags: MessageFlags.Ephemeral
+				})
+				return
+			}
+
+			const confirmEmbed = buildConfirmEmbed(
+				channel.id,
+				interaction.user.tag,
+				embedJson !== null && embedJson !== undefined
+			)
+
+			await interaction.reply({
+				embeds: [confirmEmbed],
+				flags: MessageFlags.Ephemeral
+			})
 		}
 
-		const confirmEmbed = buildConfirmEmbed(
-			channel.id,
-			interaction.user.tag,
-			embedJson !== null && embedJson !== undefined
-		)
-
-		await interaction.reply({
-			embeds: [confirmEmbed],
-			flags: MessageFlags.Ephemeral
-		})
-
 		echoLogger.info(
-			`User ${interaction.user.id} sent echo message to channel ${channel.id} in guild ${interaction.guildId}`
+			`User ${interaction.user.id} sent echo message to channels ${channel.id} in guild ${interaction.guildId}`
 		)
 	}
 }
@@ -156,12 +217,6 @@ registerCommand(EchoCommand, {
 	permissions: PermissionFlagsBits.ManageMessages,
 	guildOnly: true,
 	options: [
-		{
-			name: "canal",
-			description: "Canal donde enviar el mensaje",
-			type: OptionType.CHANNEL,
-			required: false
-		},
 		{
 			name: "mensaje",
 			description: "El texto del mensaje a enviar",
@@ -175,9 +230,21 @@ registerCommand(EchoCommand, {
 			required: false
 		},
 		{
+			name: "canal",
+			description: "Canal donde enviar el mensaje",
+			type: OptionType.CHANNEL,
+			required: false
+		},
+		{
 			name: "texto",
 			description: "Se abrirá un formulario donde poder enviar un texto",
 			type: OptionType.BOOLEAN,
+			required: false
+		},
+		{
+			name: "categoría",
+			description: "Se enviará el mensaje a todos los canales de texto de la categoría",
+			type: OptionType.CHANNEL,
 			required: false
 		}
 	]
