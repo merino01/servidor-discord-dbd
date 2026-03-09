@@ -122,6 +122,7 @@ export class EchoCommand extends BaseCommand {
 
 	private async sendMessageCategory (
 		category: CategoryChannel,
+		userId: string,
 		message?: string | null,
 		embedJson?: string | null
 	): Promise<EmbedBuilder> {
@@ -130,7 +131,7 @@ export class EchoCommand extends BaseCommand {
 			.setTitle("✅ Mensaje enviado")
 			.setColor(0x00ff00)
 			.setTimestamp()
-
+		let emoji = "❌"
 		for (const channel of channels.cache) {
 			if (channel[1].type !== ChannelType.GuildText) {
 				continue
@@ -142,9 +143,16 @@ export class EchoCommand extends BaseCommand {
 				embedJson ?? null
 			)
 
+			if (result.success) {
+				echoLogger.info(
+					`User ${userId} sent echo message to channel ${channel[1].id} in guild ${channel[1].guildId}`
+				)
+				emoji = "✅"
+			}
+
 			embed.addFields({
 				name: "",
-				value: `<#${channel[1].id}> **-->** ${result.success ? "✅" : "❌" }`
+				value: `<#${channel[1].id}> **-->** ${emoji}`
 			})
 		}
 
@@ -172,41 +180,41 @@ export class EchoCommand extends BaseCommand {
 		}
 
 		if ( category ) {
-			const embed = await this.sendMessageCategory(category, message, embedJson)
+			const embed = await this.sendMessageCategory(category, interaction.user.id, message, embedJson)
 
 			await interaction.reply({
 				embeds: [ embed ],
 				flags: MessageFlags.Ephemeral
 			})
-		} else {
-			const result = await sendMessage(
-				channel,
-				message ?? null,
-				embedJson ?? null
-			)
+			return
+		}
+		const result = await sendMessage(
+			channel,
+			message ?? null,
+			embedJson ?? null
+		)
 
-			if (!result.success) {
-				await interaction.reply({
-					embeds: [buildErrorEmbed(channel.id)],
-					flags: MessageFlags.Ephemeral
-				})
-				return
-			}
-
-			const confirmEmbed = buildConfirmEmbed(
-				channel.id,
-				interaction.user.tag,
-				embedJson !== null && embedJson !== undefined
-			)
-
+		if (!result.success) {
 			await interaction.reply({
-				embeds: [confirmEmbed],
+				embeds: [buildErrorEmbed(channel.id)],
 				flags: MessageFlags.Ephemeral
 			})
+			return
 		}
 
+		const confirmEmbed = buildConfirmEmbed(
+			channel.id,
+			interaction.user.tag,
+			embedJson !== null && embedJson !== undefined
+		)
+
+		await interaction.reply({
+			embeds: [confirmEmbed],
+			flags: MessageFlags.Ephemeral
+		})
+
 		echoLogger.info(
-			`User ${interaction.user.id} sent echo message to channels ${channel.id} in guild ${interaction.guildId}`
+			`User ${interaction.user.id} sent echo message to channel ${channel.id} in guild ${interaction.guildId}`
 		)
 	}
 }
