@@ -17,9 +17,10 @@ botEvents.on("member:join", async (member: GuildMember) => {
 			setTimeout(async () => {
 				await member.send(message)
 			}, config.waitTime * 1000)
-		} else {
-			await member.send(message)
+			return
 		}
+
+		await member.send(message)
 
 	} catch (error) {
 		welcomeMessageListener.error(`Error al enviar mensaje directo a ${member.user.tag} (${member.id}):`, error)
