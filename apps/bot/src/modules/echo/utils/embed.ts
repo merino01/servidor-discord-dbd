@@ -28,3 +28,11 @@ export function buildConfirmEmbed (
 		.setFooter({ text: `Enviado por ${username}` })
 		.setTimestamp()
 }
+
+export function buildErrorEmbed (channelId: string): EmbedBuilder {
+	return new EmbedBuilder()
+		.setColor(0xff0000)
+		.setTitle("❌ Error")
+		.setDescription(`Ha ocurrido un error al intentar enviarlo en <#${channelId}>`)
+		.setTimestamp()
+}
