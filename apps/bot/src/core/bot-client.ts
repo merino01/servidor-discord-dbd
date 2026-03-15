@@ -217,7 +217,6 @@ export class BotClient extends Client {
 			activities: [{
 				name: "/stats ranking",
 				type: ActivityType.Streaming,
-				state: "Merino y negrino no son la misma persona"
 			}]
 		})
 	}
