@@ -26,17 +26,6 @@ export enum OptionType {
 }
 
 /**
- * Interfaz para una opción de comando
- */
-export interface CommandOption {
-  name: string;
-  description: string;
-  type: OptionType;
-  required?: boolean;
-  choices?: Array<{ name: string; value: string | number }>;
-}
-
-/**
  * Opciones para definir un comando slash
  */
 export interface SlashCommandOptions {
