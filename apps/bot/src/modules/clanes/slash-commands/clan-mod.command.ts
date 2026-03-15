@@ -10,10 +10,11 @@ import {
 	ButtonBuilder,
 	ButtonStyle,
 	Message,
-	ButtonInteraction
+	ButtonInteraction,
+	ApplicationCommandOptionType
 } from "discord.js"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
+import { CommandContext } from "@types"
 import { BaseCommand } from "@/core/base/base-command"
 import { ClanModel, IClan } from "@org/mongo"
 import { ClanService } from "../services/clan.service"
@@ -659,19 +660,19 @@ registerSubCommand(ClanModCommand, "crear", {
 		{
 			name: "nombre",
 			description: "Nombre del clan",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		},
 		{
 			name: "icono",
 			description: "Emoji o icono del clan",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		},
 		{
 			name: "lider",
 			description: "Usuario que será el líder del clan",
-			type: OptionType.USER,
+			type: ApplicationCommandOptionType.User,
 			required: true
 		}
 	]
@@ -684,7 +685,7 @@ registerSubCommand(ClanModCommand, "eliminar", {
 		{
 			name: "rol",
 			description: "Rol del clan a eliminar",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		}
 	]
@@ -697,13 +698,13 @@ registerSubCommand(ClanModCommand, "añadirLider", {
 		{
 			name: "rol",
 			description: "Rol del clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		},
 		{
 			name: "usuario",
 			description: "Usuario a añadir como líder",
-			type: OptionType.USER,
+			type: ApplicationCommandOptionType.User,
 			required: true
 		}
 	]
@@ -716,13 +717,13 @@ registerSubCommand(ClanModCommand, "eliminarLider", {
 		{
 			name: "rol",
 			description: "Rol del clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		},
 		{
 			name: "usuario",
 			description: "Líder a eliminar",
-			type: OptionType.USER,
+			type: ApplicationCommandOptionType.User,
 			required: true
 		}
 	]
@@ -735,13 +736,13 @@ registerSubCommand(ClanModCommand, "añadirMiembro", {
 		{
 			name: "rol",
 			description: "Rol del clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		},
 		{
 			name: "usuario",
 			description: "Usuario a añadir",
-			type: OptionType.USER,
+			type: ApplicationCommandOptionType.User,
 			required: true
 		}
 	]
@@ -754,13 +755,13 @@ registerSubCommand(ClanModCommand, "expulsar", {
 		{
 			name: "rol",
 			description: "Rol del clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		},
 		{
 			name: "usuario",
 			description: "Miembro a expulsar",
-			type: OptionType.USER,
+			type: ApplicationCommandOptionType.User,
 			required: true
 		}
 	]
@@ -773,7 +774,7 @@ registerSubCommand(ClanModCommand, "añadirCanal", {
 		{
 			name: "rol",
 			description: "Rol del clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		}
 	]
@@ -786,7 +787,7 @@ registerSubCommand(ClanModCommand, "eliminarCanal", {
 		{
 			name: "rol",
 			description: "Rol del clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		}
 	]
@@ -799,7 +800,7 @@ registerSubCommand(ClanModCommand, "info", {
 		{
 			name: "ver-eliminados",
 			description: "Incluir clanes eliminados en la información",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		}
 	]
@@ -812,7 +813,7 @@ registerSubCommand(ClanModCommand, "miembros", {
 		{
 			name: "rol",
 			description: "Rol del clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		}
 	]

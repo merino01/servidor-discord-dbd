@@ -1,10 +1,10 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand } from "@/core/command-register"
 import { botLogger } from "@/core/logger"
-import { CommandContext, OptionType } from "@/core/types"
+import { CommandContext } from "@/core/types"
 import { EmbedBuilder } from "@discordjs/builders"
 import { WelcomeMessageModel } from "@org/mongo"
-import { APIEmbed, MessageFlags, PermissionFlagsBits } from "discord.js"
+import { APIEmbed, MessageFlags, PermissionFlagsBits, ApplicationCommandOptionType } from "discord.js"
 
 const welcomeMessageLogger = botLogger.child("welcome-message-command")
 
@@ -105,19 +105,19 @@ registerCommand(WelcomeMessageCommand, {
 		{
 			name: "activar",
 			description: "Activa o desactiva el sistema de mensajes directos. (Por defecto, desactivado)",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		},
 		{
 			name: "mensaje",
 			description: "El mensaje que se enviará al usuario cuando se una",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "embed",
 			description: "El embed que se enviará al usuario cuando se una (en formato JSON)",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		}
 	]

@@ -1,6 +1,7 @@
 import {
 	SlashCommandBuilder,
-	ChatInputCommandInteraction
+	ChatInputCommandInteraction,
+	ApplicationCommandOption
 } from "discord.js"
 
 /**
@@ -44,7 +45,7 @@ export interface SlashCommandOptions {
   permissions?: bigint | number | null;
   guildOnly?: boolean;
   ownerOnly?: boolean;
-  options?: CommandOption[];
+  options?: ApplicationCommandOption[];
 }
 
 /**
@@ -53,7 +54,7 @@ export interface SlashCommandOptions {
 export interface SubCommandOptions {
   name: string;
   description: string;
-  options?: CommandOption[];
+  options?: ApplicationCommandOption[];
 }
 
 /**

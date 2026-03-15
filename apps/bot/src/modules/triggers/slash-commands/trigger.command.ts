@@ -1,6 +1,6 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
+import { CommandContext } from "@types"
 import {
 	PermissionFlagsBits,
 	EmbedBuilder,
@@ -8,7 +8,9 @@ import {
 	StringSelectMenuBuilder,
 	StringSelectMenuOptionBuilder,
 	ChatInputCommandInteraction,
-	MessageFlags
+	MessageFlags,
+	ApplicationCommandOptionType,
+	ChannelType
 } from "discord.js"
 import { TriggerModel, TriggerMatchType, ITrigger } from "@org/mongo"
 import { botLogger } from "@/core/logger"
@@ -334,19 +336,19 @@ registerSubCommand(TriggerCommand, "crear", {
 		{
 			name: "texto",
 			description: "El texto que activará el trigger",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		},
 		{
 			name: "respuesta",
 			description: "La respuesta que dará el bot",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		},
 		{
 			name: "tipo",
 			description: "Tipo de coincidencia",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false,
 			choices: [
 				{ name: "Palabra completa (recomendado)", value: TriggerMatchType.WORD },
@@ -360,55 +362,60 @@ registerSubCommand(TriggerCommand, "crear", {
 		{
 			name: "case-sensitive",
 			description: "¿Diferenciar mayúsculas/minúsculas?",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		},
 		{
 			name: "canal1",
 			description: "Canal donde aplicar (vacío = todos)",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildText, ChannelType.PrivateThread, ChannelType.PublicThread],
 			required: false
 		},
 		{
 			name: "canal2",
 			description: "Canal adicional (opcional)",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildText, ChannelType.PrivateThread, ChannelType.PublicThread],
 			required: false
 		},
 		{
 			name: "canal3",
 			description: "Canal adicional (opcional)",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildText, ChannelType.PrivateThread, ChannelType.PublicThread],
 			required: false
 		},
 		{
 			name: "canal4",
 			description: "Canal adicional (opcional)",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildText, ChannelType.PrivateThread, ChannelType.PublicThread],
 			required: false
 		},
 		{
 			name: "canal5",
 			description: "Canal adicional (opcional)",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildText, ChannelType.PrivateThread, ChannelType.PublicThread],
 			required: false
 		},
 		{
 			name: "excluir-canales",
 			description: "Si es true, excluye los canales especificados",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		},
 		{
 			name: "eliminar-mensaje",
 			description: "Eliminar el mensaje original del usuario",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		},
 		{
 			name: "regex-flags",
 			description: "Flags para regex (ej: 'gi', 'i')",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		}
 	]
@@ -420,7 +427,7 @@ registerSubCommand(TriggerCommand, "info", {
 		{
 			name: "ver-eliminados",
 			description: "Mostrar triggers eliminados en lugar de activos",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		}
 	]
@@ -432,7 +439,7 @@ registerSubCommand(TriggerCommand, "eliminar", {
 		{
 			name: "id",
 			description: "El ID del trigger a eliminar (usa /trigger listar para ver los IDs)",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		}
 	]

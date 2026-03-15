@@ -1,13 +1,15 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
+import { CommandContext } from "@types"
 import {
 	PermissionFlagsBits,
 	EmbedBuilder,
 	MessageFlags,
 	ActionRowBuilder,
 	StringSelectMenuBuilder,
-	StringSelectMenuOptionBuilder
+	StringSelectMenuOptionBuilder,
+	ApplicationCommandOptionType,
+	ChannelType
 } from "discord.js"
 import { ChannelFormatModel, IChannelFormat } from "@org/mongo"
 import { botLogger } from "@/core/logger"
@@ -415,37 +417,38 @@ registerSubCommand(FormatCommand, "configurar", {
 		{
 			name: "nombre",
 			description: "Nombre identificador del formato",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		},
 		{
 			name: "canal",
 			description: "Canal a configurar",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes:[ChannelType.GuildText],
 			required: true
 		},
 		{
 			name: "patron",
 			description: "Patrón regex (ej: \\d+ para solo números)",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		},
 		{
 			name: "flags",
 			description: "Flags del regex (ej: i para case-insensitive)",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "eliminar",
 			description: "Eliminar mensajes que no cumplan (default: true)",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		},
 		{
 			name: "notificar",
 			description: "Notificar al usuario (default: true)",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		}
 	]
@@ -458,7 +461,7 @@ registerSubCommand(FormatCommand, "info", {
 		{
 			name: "ver-eliminados",
 			description: "Mostrar formatos eliminados",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		}
 	]
@@ -471,7 +474,7 @@ registerSubCommand(FormatCommand, "eliminar", {
 		{
 			name: "id",
 			description: "ID del formato a eliminar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		}
 	]
@@ -484,7 +487,7 @@ registerSubCommand(FormatCommand, "pausar", {
 		{
 			name: "id",
 			description: "ID del formato a pausar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		}
 	]
@@ -497,7 +500,7 @@ registerSubCommand(FormatCommand, "reanudar", {
 		{
 			name: "id",
 			description: "ID del formato a reanudar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		}
 	]

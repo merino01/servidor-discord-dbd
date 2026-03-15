@@ -1,8 +1,7 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
+import { CommandContext } from "@types"
 import {
-	PermissionFlagsBits,
 	MessageFlags,
 	TextChannel,
 	ChannelType,
@@ -12,7 +11,9 @@ import {
 	ModalBuilder,
 	LabelBuilder,
 	TextInputStyle,
-	TextInputBuilder
+	TextInputBuilder,
+	ApplicationCommandOptionType,
+	PermissionFlagsBits
 } from "discord.js"
 import { botLogger } from "@/core/logger"
 import { sendMessage } from "../utils/send-message"
@@ -159,26 +160,28 @@ registerCommand(EchoCommand, {
 		{
 			name: "canal",
 			description: "Canal donde enviar el mensaje",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildText, ChannelType.GuildAnnouncement],
 			required: false
 		},
 		{
 			name: "mensaje",
 			description: "El texto del mensaje a enviar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "embed",
 			description: "El embed en formato JSON a enviar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "texto",
 			description: "Se abrirá un formulario donde poder enviar un texto",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		}
 	]
 })
+

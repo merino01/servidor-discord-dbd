@@ -1,6 +1,6 @@
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
-import { PermissionFlagsBits, EmbedBuilder, MessageFlags } from "discord.js"
+import { CommandContext } from "@types"
+import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ApplicationCommandOptionType, ChannelType } from "discord.js"
 import { ClanService } from "../services/clan.service"
 import { BaseCommand } from "@/core/base/base-command"
 
@@ -115,12 +115,49 @@ registerSubCommand(ClanAdminCommand, "migrar", {
 	name: "migrar",
 	description: "Migrar un clan existente al sistema",
 	options: [
-		{ name: "nombre", description: "Nombre del clan", type: OptionType.STRING, required: true },
-		{ name: "icono", description: "Icono del clan (emoji)", type: OptionType.STRING, required: true },
-		{ name: "rol", description: "Rol del clan", type: OptionType.ROLE, required: true },
-		{ name: "canal_texto", description: "Canal de texto del clan", type: OptionType.CHANNEL, required: true },
-		{ name: "canal_voz", description: "Canal de voz del clan", type: OptionType.CHANNEL, required: true },
-		{ name: "limite", description: "Límite de miembros", type: OptionType.INTEGER, required: true },
-		{ name: "lider", description: "Usuario líder del clan", type: OptionType.USER, required: true }
+		{
+			name: "nombre",
+			description: "Nombre del clan",
+			type: ApplicationCommandOptionType.String,
+			required: true
+		},
+		{
+			name: "icono",
+			description: "Icono del clan (emoji)",
+			type: ApplicationCommandOptionType.String,
+			required: true
+		},
+		{
+			name: "rol",
+			description: "Rol del clan",
+			type: ApplicationCommandOptionType.Role,
+			required: true
+		},
+		{
+			name: "canal_texto",
+			description: "Canal de texto del clan",
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildText],
+			required: true
+		},
+		{
+			name: "canal_voz",
+			description: "Canal de voz del clan",
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildVoice],
+			required: true
+		},
+		{
+			name: "limite",
+			description: "Límite de miembros",
+			type: ApplicationCommandOptionType.Integer,
+			required: true
+		},
+		{
+			name: "lider",
+			description: "Usuario líder del clan",
+			type: ApplicationCommandOptionType.User,
+			required: true
+		}
 	]
 })
