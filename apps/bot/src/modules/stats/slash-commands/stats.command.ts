@@ -3,13 +3,14 @@ import {
 	registerCommand,
 	registerSubCommand
 } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
+import { CommandContext } from "@types"
 import {
 	EmbedBuilder,
 	UserManager,
 	ActionRowBuilder,
 	ButtonBuilder,
-	ButtonStyle
+	ButtonStyle,
+	ApplicationCommandOptionType
 } from "discord.js"
 import { UserStatsModel } from "@org/mongo"
 import { LevelService } from "../services/level.service"
@@ -280,7 +281,7 @@ registerSubCommand(StatsCommand, "perfil", {
 		{
 			name: "usuario",
 			description: "Usuario a consultar (vacío para ti mismo)",
-			type: OptionType.USER,
+			type: ApplicationCommandOptionType.User,
 			required: false
 		}
 	]

@@ -1,8 +1,8 @@
-import { PermissionFlagsBits } from "discord.js"
+import { PermissionFlagsBits, ApplicationCommandOptionType } from "discord.js"
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { botLogger } from "@/core/logger"
-import { CommandContext, OptionType } from "@/core/types"
+import { CommandContext } from "@/core/types"
 import { UserNotificationModel } from "@org/mongo"
 
 const notificatorLogger = botLogger.child("notificator")
@@ -56,7 +56,7 @@ class UserMentionCommand extends BaseCommand {
 registerCommand(UserMentionCommand, {
 	name: "user-mention",
 	description: "Configura una notificación para mencionar a un usuario cuando se detecte un patrón en los mensajes.",
-	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages
+	permissions: PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageMessages
 })
 
 registerSubCommand(UserMentionCommand, "crear", {
@@ -67,25 +67,25 @@ registerSubCommand(UserMentionCommand, "crear", {
 			name: "usuario",
 			description: "El usuario a mencionar cuando se detecte el patrón.",
 			required: true,
-			type: OptionType.USER
+			type: ApplicationCommandOptionType.User
 		},
 		{
 			name: "patron",
 			description: "El patrón a detectar en los mensajes (expresión regular).",
 			required: true,
-			type: OptionType.STRING
+			type: ApplicationCommandOptionType.String
 		},
 		{
 			name: "canales",
 			description: "Canales donde la notificación estará activa, separados por comas",
 			required: false,
-			type: OptionType.STRING
+			type: ApplicationCommandOptionType.String
 		},
 		{
 			name: "excluir_canales",
 			description: "Si se deben excluir los canales especificados en lugar de incluirlos.",
 			required: false,
-			type: OptionType.BOOLEAN
+			type: ApplicationCommandOptionType.Boolean
 		}
 	]
 })

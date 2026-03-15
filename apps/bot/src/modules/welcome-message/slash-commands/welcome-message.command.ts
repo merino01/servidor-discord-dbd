@@ -1,9 +1,15 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { botLogger } from "@/core/logger"
-import { CommandContext, OptionType } from "@/core/types"
+import { CommandContext } from "@/core/types"
 import { IWelcomeMessage, WelcomeMessageModel } from "@org/mongo"
-import { EmbedBuilder, InteractionReplyOptions, MessageFlags, PermissionFlagsBits } from "discord.js"
+import {
+	ApplicationCommandOptionType,
+	EmbedBuilder,
+	InteractionReplyOptions,
+	MessageFlags,
+	PermissionFlagsBits
+} from "discord.js"
 import { createMessage } from "../util/messages"
 
 const welcomeMessageLogger = botLogger.child("welcome-message")
@@ -101,7 +107,7 @@ export class WelcomeMessageCommand extends BaseCommand {
 		})
 		try {
 			const config = await WelcomeMessageModel.findOne({
-				guildId: interaction.guild!.id
+				guildId: interaction.guild?.id ?? null
 			})
 
 			if (!config) {
@@ -258,26 +264,26 @@ registerSubCommand(WelcomeMessageCommand, "configure", {
 	options: [
 		{
 			name: "activar",
-			description: "Activa o desactiva el sistema de mensajes directos. (Por defecto, activado)",
-			type: OptionType.BOOLEAN,
+			description: "Activa o desactiva el sistema de mensajes directos. (Por defecto, desactivado)",
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		},
 		{
 			name: "mensaje",
 			description: "El mensaje que se enviará al usuario cuando se una",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "embed",
 			description: "El embed que se enviará al usuario cuando se una (en formato JSON)",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "tiempo",
 			description: "Tiempo de espera desde que se une hasta que se envía el mensaje (en segundos)",
-			type: OptionType.INTEGER,
+			type: ApplicationCommandOptionType.Integer,
 			required: false
 		}
 	]
@@ -292,3 +298,4 @@ registerSubCommand(WelcomeMessageCommand, "remove", {
 	name: "eliminar",
 	description: "Elimina la configuración actual"
 })
+

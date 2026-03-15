@@ -1,6 +1,7 @@
 import {
 	SlashCommandBuilder,
-	ChatInputCommandInteraction
+	ChatInputCommandInteraction,
+	ApplicationCommandOption
 } from "discord.js"
 
 /**
@@ -25,17 +26,6 @@ export enum OptionType {
 }
 
 /**
- * Interfaz para una opción de comando
- */
-export interface CommandOption {
-  name: string;
-  description: string;
-  type: OptionType;
-  required?: boolean;
-  choices?: Array<{ name: string; value: string | number }>;
-}
-
-/**
  * Opciones para definir un comando slash
  */
 export interface SlashCommandOptions {
@@ -44,7 +34,7 @@ export interface SlashCommandOptions {
   permissions?: bigint | number | null;
   guildOnly?: boolean;
   ownerOnly?: boolean;
-  options?: CommandOption[];
+  options?: ApplicationCommandOption[];
 }
 
 /**
@@ -53,7 +43,7 @@ export interface SlashCommandOptions {
 export interface SubCommandOptions {
   name: string;
   description: string;
-  options?: CommandOption[];
+  options?: ApplicationCommandOption[];
 }
 
 /**
