@@ -216,7 +216,7 @@ export class BotClient extends Client {
 		this.user?.setPresence({
 			activities: [{
 				name: "/stats ranking",
-				type: ActivityType.Streaming,
+				type: ActivityType.Streaming
 			}]
 		})
 	}
