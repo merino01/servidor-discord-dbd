@@ -12,8 +12,7 @@ import {
 	GuildBasedChannel,
 	APIInteractionDataResolvedChannel,
 	ChatInputCommandInteraction,
-	ApplicationCommandOptionType,
-	Guild
+	ApplicationCommandOptionType
 } from "discord.js"
 import { AutoMessageModel, AutoMessageTargetType, IAutoMessage } from "@org/mongo"
 import { botLogger } from "@/core/logger"
@@ -632,7 +631,7 @@ export class AutoMessageCommand extends BaseCommand {
 registerCommand(AutoMessageCommand, {
 	name: "automensaje",
 	description: "Gestiona los mensajes automáticos del servidor",
-	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages,
+	permissions: PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageMessages,
 	guildOnly: true
 })
 

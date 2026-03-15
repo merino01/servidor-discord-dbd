@@ -56,7 +56,7 @@ class UserMentionCommand extends BaseCommand {
 registerCommand(UserMentionCommand, {
 	name: "user-mention",
 	description: "Configura una notificación para mencionar a un usuario cuando se detecte un patrón en los mensajes.",
-	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages
+	permissions: PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageMessages
 })
 
 registerSubCommand(UserMentionCommand, "crear", {

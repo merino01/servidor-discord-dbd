@@ -324,7 +324,7 @@ export class TriggerCommand extends BaseCommand {
 registerCommand(TriggerCommand, {
 	name: "trigger",
 	description: "Gestiona los triggers del servidor",
-	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages,
+	permissions: PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageMessages,
 	guildOnly: true
 })
 
