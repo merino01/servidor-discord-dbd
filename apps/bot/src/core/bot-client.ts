@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js"
+import { ActivityType, Client, Events, GatewayIntentBits, MessageFlags } from "discord.js"
 import { CommandRegistry } from "./command-registry"
 import { getRegisteredEvents } from "./event-registry"
 import { getButtonHandler, getSelectMenuHandler, getModalHandler } from "./components/component-registry"
@@ -209,6 +209,20 @@ export class BotClient extends Client {
 	}
 
 	/**
+ 		* Establece el estado del bot
+		*/
+
+	private setPresence (): void {
+		this.user?.setPresence({
+			activities: [{
+				name: "/stats ranking",
+				type: ActivityType.Streaming,
+				state: "Merino y negrino no son la misma persona"
+			}]
+		})
+	}
+
+	/**
    * Inicializa el bot
    */
 	async start (token: string, guildId?: string): Promise<void> {
@@ -220,6 +234,9 @@ export class BotClient extends Client {
 
 		// Conectar al bot
 		await this.login(token)
+
+		// Establece el estado del bot
+		this.setPresence()
 
 		// Desplegar comandos en Discord
 		if (guildId) {
