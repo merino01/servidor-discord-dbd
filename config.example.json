@@ -20,6 +20,12 @@
 	"databases": {
 		"mongo": {
 			"uri": "mongodb://usuario:contraseña@localhost:27017/discord-bot?authSource=admin"
+		},
+		"redis": {
+			"host": "localhost",
+			"port": 6379,
+			"username": "tu_usuario_de_redis_aqui",
+			"password": "tu_contraseña_de_redis_aqui"
 		}
 	},
 	"dashboard": {

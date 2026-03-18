@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "types": ["node"],
+    "experimentalDecorators": true,
     "rootDir": "src",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",
     "baseUrl": ".",
@@ -30,10 +31,13 @@
       "path": "../../libs/logger/tsconfig.lib.json"
     },
     {
+      "path": "../../packages/config/tsconfig.lib.json"
+    },
+    {
       "path": "../../packages/mongo/tsconfig.lib.json"
     },
     {
-      "path": "../../packages/config/tsconfig.lib.json"
+      "path": "../../packages/redis/tsconfig.lib.json"
     }
   ]
 }

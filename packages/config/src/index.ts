@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs"
-import { join } from "node:path"
+import { readFileSync, existsSync } from "node:fs"
+import { join, resolve, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
-import { dirname } from "node:path"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -36,12 +35,20 @@ export interface DashboardConfig {
 	port: number
 }
 
+export interface RedisConfig {
+	host: string
+	port: number
+	username?: string
+	password?: string
+}
+
 export interface AppConfig {
 	discord: DiscordConfig
 	bot: BotConfig
 	features: FeaturesConfig
 	databases: {
 		mongo: MongoConfig
+		redis: RedisConfig
 	}
 	dashboard: DashboardConfig
 }
@@ -53,7 +60,24 @@ export function loadConfig (): AppConfig {
 		return cachedConfig
 	}
 
-	const configPath = join(__dirname, "../../../config.json")
+	// Buscar config.json en dos ubicaciones posibles
+	const possiblePaths = [
+		resolve(join(__dirname, "..", "..", "..", "..", "config.json")),
+		resolve(join(__dirname, "..", "..", "..", "config.json"))
+	]
+
+	let configPath: string | null = null
+	for (const path of possiblePaths) {
+		if (existsSync(path)) {
+			configPath = path
+			break
+		}
+	}
+
+	if (!configPath) {
+		throw new Error("No se encontró config.json en las rutas esperadas")
+	}
+
 	const configContent = readFileSync(configPath, "utf-8")
 	cachedConfig = JSON.parse(configContent) as AppConfig
 

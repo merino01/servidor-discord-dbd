@@ -20,6 +20,9 @@
   ],
   "references": [
     {
+      "path": "../../../packages/redis/tsconfig.lib.json"
+    },
+    {
       "path": "../../../packages/config/tsconfig.lib.json"
     },
     {

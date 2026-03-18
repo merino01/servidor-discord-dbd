@@ -7,8 +7,8 @@ module.exports = {
 			env: {
 				NODE_ENV: "production"
 			},
-			error_file: "./logs/bot-error.log",
-			out_file: "./logs/bot-out.log",
+			error_file: "../../logs/bot-error.log",
+			out_file: "../../logs/bot-out.log",
 			log_date_format: "YYYY-MM-DD HH:mm:ss Z",
 			autorestart: true,
 			watch: false,
@@ -21,8 +21,8 @@ module.exports = {
 			env: {
 				NODE_ENV: "production"
 			},
-			error_file: "./logs/server-error.log",
-			out_file: "./logs/server-out.log",
+			error_file: "../../logs/dashboard-error.log",
+			out_file: "../../logs/dashboard-out.log",
 			log_date_format: "YYYY-MM-DD HH:mm:ss Z",
 			autorestart: true,
 			watch: false,

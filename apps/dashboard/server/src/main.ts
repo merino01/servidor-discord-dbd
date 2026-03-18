@@ -1,25 +1,34 @@
 import express from "express"
 import { join } from "node:path"
 import { existsSync } from "node:fs"
+import cors from "cors"
 import { dashboardLogger } from "./lib/logger"
 import { getConfig } from "@org/config"
+import { createRouter } from "./router"
+import { isDevelopment, isProduction } from "./lib/environment"
 
 const config = getConfig()
+const router = createRouter()
 
 const host = process.env.HOST ?? "localhost"
 const { port } = config.dashboard
 
 const app = express()
-
 app.use(express.json())
+if (isDevelopment) {
+	app.use(cors({
+		allowedHeaders: ["Content-Type"],
+		origin: "*"
+	}))
+}
 
 // API routes
 app.get("/api/health", (req, res) => {
 	res.json({ message: "Dashboard API OK", timestamp: new Date() })
 })
+app.use("/api", router)
 
 // Servir archivos estáticos del frontend en producción
-const isProduction = process.env.NODE_ENV === "production"
 if (isProduction) {
 	// Buscar el build del cliente
 	const clientDistPath = join(process.cwd(), "dist-client")
@@ -43,3 +52,4 @@ if (isProduction) {
 app.listen(port, host, () => {
 	dashboardLogger.info(`[ ready ] http://${host}:${port}`)
 })
+
