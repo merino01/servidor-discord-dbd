@@ -69,15 +69,6 @@ export class AutoMessageCommand extends BaseCommand {
 		return null
 	}
 
-	private validateCategoryType (
-		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null
-	): string | null {
-		if (category && category.type !== ChannelType.GuildCategory) {
-			return "❌ El canal especificado no es una categoría."
-		}
-		return null
-	}
-
 	private validateMessage (
 		message: string | null,
 		embed: string | null
@@ -100,9 +91,6 @@ export class AutoMessageCommand extends BaseCommand {
 
 		const cronRequirementsError = this.validateCronRequirements(channel, category, cronExpression)
 		if (cronRequirementsError) { return cronRequirementsError }
-
-		const categoryTypeError = this.validateCategoryType(category)
-		if (categoryTypeError) { return categoryTypeError }
 
 		const messageError = this.validateMessage(message, messageEmbed)
 		if (messageError) { return messageError }

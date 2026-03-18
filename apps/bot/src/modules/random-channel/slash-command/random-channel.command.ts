@@ -70,13 +70,6 @@ class RandomChannelCommand extends BaseCommand {
 		const { interaction } = context
 
 		const channel = interaction.options.getChannel("canal", true) as VoiceBasedChannel
-		if (channel.type !== ChannelType.GuildVoice) {
-			await interaction.reply({
-				content: "El canal proporcionado no es válido.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
@@ -149,6 +142,7 @@ registerSubCommand(RandomChannelCommand, "eliminar", {
 		name: "canal",
 		description: "El canal aleatorio a eliminar.",
 		type: ApplicationCommandOptionType.Channel,
+		channelTypes: [ChannelType.GuildVoice],
 		required: true
 	}]
 })

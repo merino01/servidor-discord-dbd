@@ -49,12 +49,6 @@ export class ClanConfigCommand extends BaseCommand {
 		maxCanalesExtra: number
 		expiracionHoras: number
 	}): string | null {
-		const isValidCategory = params.categoriaVozType === ChannelType.GuildCategory &&
-			params.categoriaTextoType === ChannelType.GuildCategory
-
-		if (!isValidCategory) {
-			return "El canal especificado debe ser una categoría."
-		}
 
 		if (params.maxMiembros < 1 || params.maxMiembros > 100) {
 			return "El máximo de miembros debe estar entre 1 y 100."
