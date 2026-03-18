@@ -30,23 +30,8 @@ export class EchoCommand extends BaseCommand {
 		if (!channel) {
 			return "❌ Debes especificar un canal válido."
 		}
-
-		if (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement) {
-			return "❌ El canal debe ser un canal de texto o de anuncios."
-		}
-
 		return null
 	}
-
-	private validateCategory (
-		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null
-	 ): string | null {
-		if (channel && channel?.type !== ChannelType.GuildCategory) {
-			return "❌ No es una categoría válida"
-		}
-
-		return null
-	 }
 
 	private validateMessageContent (message: string | null, embed: string | null, text: boolean | null): string | null {
 		if (!message && !embed && !text) {
@@ -79,11 +64,6 @@ export class EchoCommand extends BaseCommand {
 		const embedJson = interaction.options.getString("embed")
 		const text = interaction.options.getBoolean("texto")
 		const category = interaction.options.getChannel("categoría")
-
-		const categoryError = this.validateCategory(category)
-		if (categoryError) {
-			return { success: false, error: categoryError }
-		}
 
 		const channelError = this.validateChannel(targetChannel)
 		if (channelError) {
