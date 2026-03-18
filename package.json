@@ -20,8 +20,7 @@
 		"test:all": "nx run-many -t test",
 		"test:client": "nx test @org/client",
 		"test:server": "nx test @org/server",
-		"test:bot": "nx test @org/bot",
-		"prepare": "husky"
+		"test:bot": "nx test @org/bot"
 	},
 	"private": true,
 	"devDependencies": {
@@ -58,7 +57,6 @@
 		"eslint-config-prettier": "^10.0.0",
 		"eslint-plugin-playwright": "^1.6.2",
 		"eslint-plugin-vue": "^9.16.1",
-		"husky": "^9.1.7",
 		"jest": "^30.0.2",
 		"jest-environment-node": "^30.0.2",
 		"jest-util": "^30.0.2",

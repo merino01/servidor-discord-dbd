@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-eval "$(fnm env --shell bash)" 2>/dev/null || true
-npx nx affected -t lint
