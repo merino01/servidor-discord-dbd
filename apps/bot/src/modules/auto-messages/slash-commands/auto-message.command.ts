@@ -1,6 +1,13 @@
 import { BaseCommand } from "@/core/base/base-command"
-import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
+import {
+	SlashCommand,
+	Subcommand,
+	StringOption,
+	ChannelOption,
+	IntegerOption,
+	BooleanOption
+} from "@/core/decorators/command.decorators"
+import { CommandContext } from "@types"
 import {
 	PermissionFlagsBits,
 	EmbedBuilder,
@@ -21,25 +28,36 @@ import { addCategoryExtraInfo, buildAutoMessageInfoEmbed } from "../utils/embed-
 
 const autoMessageLogger = botLogger.child("auto-messages")
 
+type TargetChannel = GuildBasedChannel | APIInteractionDataResolvedChannel | null
+
 interface CreateOptions {
-		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
-		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
+		channel: TargetChannel,
+		category: TargetChannel,
 		cronExpression: string | null,
 		message: string | null,
 		messageEmbed: string | null
 	}
 
+@SlashCommand({
+	name: "automensaje",
+	description: "Gestiona los mensajes automáticos del servidor",
+	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages,
+	guildOnly: true
+})
 export class AutoMessageCommand extends BaseCommand {
 
+	private validateCronField (field: string): boolean {
+		return /^(\*|\d{1,2}|\*\/\d{1,2})$/.test(field)
+	}
+
 	private validateCronExpression (expression: string): boolean {
-		// eslint-disable-next-line max-len
-		const cronRegex = /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$/
-		return cronRegex.test(expression)
+		const parts = expression.split(" ")
+		return parts.length === 6 && parts.every((part) => this.validateCronField(part))
 	}
 
 	private validateChannelOrCategory (
-		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
-		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null
+		channel: TargetChannel,
+		category: TargetChannel
 	): string | null {
 		if (!channel && !category) {
 			return "❌ Debes especificar un canal o una categoría."
@@ -53,8 +71,8 @@ export class AutoMessageCommand extends BaseCommand {
 	}
 
 	private validateCronRequirements (
-		channel: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
-		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null,
+		channel: TargetChannel,
+		category: TargetChannel,
 		cronExpression: string | null
 	): string | null {
 		if (channel && !cronExpression) {
@@ -69,7 +87,7 @@ export class AutoMessageCommand extends BaseCommand {
 	}
 
 	private validateCategoryType (
-		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null
+		category: TargetChannel
 	): string | null {
 		if (category && category.type !== ChannelType.GuildCategory) {
 			return "❌ El canal especificado no es una categoría."
@@ -216,17 +234,22 @@ export class AutoMessageCommand extends BaseCommand {
 		await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
 	}
 
-	async crear (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guildId) {
-			await interaction.reply({
-				content: "❌ Este comando solo funciona en servidores.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
+	@Subcommand({ name: "crear", description: "Crea un nuevo mensaje automático" })
+	@StringOption({ name: "nombre", description: "Nombre identificador del mensaje automático", required: true })
+	@StringOption({ name: "mensaje", description: "El mensaje que se enviará" })
+	@StringOption({ name: "embed", description: "El embed en formato JSON que se enviará" })
+	@StringOption({ name: "cron", description: "Expresión cron (solo para canales, ej: '0 0 9 * * *' = 9:00 AM)" })
+	@ChannelOption({ name: "canal", description: "Canal donde enviar el mensaje" })
+	@ChannelOption({
+		name: "categoria",
+		description: "Categoría donde enviar el mensaje (a todos los canales de texto)"
+	})
+	@IntegerOption({
+		name: "tiempo",
+		description: "Tiempo de espera para enviar un mensaje tras la creación de un canal (en segundos)"
+	})
+	@BooleanOption({ name: "anclar", description: "Anclar los mensajes automaticos que se envian al crear un canal" })
+	private async processCrear (interaction: ChatInputCommandInteraction, guildId: string): Promise<void> {
 		const options = this.getCrearOptions(interaction)
 
 		const validationError = this.validateTargetSelection({
@@ -238,19 +261,15 @@ export class AutoMessageCommand extends BaseCommand {
 		})
 
 		if (validationError) {
-			await interaction.reply({
-				content: validationError,
-				flags: MessageFlags.Ephemeral
-			})
+			await interaction.reply({ content: validationError, flags: MessageFlags.Ephemeral })
 			return
 		}
 
 		try {
 			const targetType = options.channel ? AutoMessageTargetType.CHANNEL : AutoMessageTargetType.CATEGORY
 			const targetId = (options.channel ? options.channel.id : options.category?.id) as string
-
 			const autoMessage = await this.createAutoMessage({
-				guildId: interaction.guildId,
+				guildId,
 				name: options.name,
 				message: options.message,
 				messageEmbed: options.messageEmbed,
@@ -261,7 +280,6 @@ export class AutoMessageCommand extends BaseCommand {
 				pin: options.pin,
 				userId: interaction.user.id
 			})
-
 			await this.handleCrearSuccess(interaction, options.name, autoMessage)
 		} catch (error) {
 			autoMessageLogger.error("Error al crear mensaje automático:", error)
@@ -270,6 +288,20 @@ export class AutoMessageCommand extends BaseCommand {
 				flags: MessageFlags.Ephemeral
 			})
 		}
+	}
+
+	async crear (context: CommandContext): Promise<void> {
+		const { interaction } = context
+
+		if (!interaction.guildId) {
+			await interaction.reply({
+				content: "❌ Este comando solo funciona en servidores.",
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
+
+		await this.processCrear(interaction, interaction.guildId)
 	}
 
 	private buildListEmbed (autoMessages: IAutoMessage[], verEliminados: boolean): EmbedBuilder {
@@ -310,14 +342,12 @@ export class AutoMessageCommand extends BaseCommand {
 				const fecha = new Date(am.deletedAt).toLocaleDateString("es-ES")
 				label = `🗑️ [${fecha}] ${am.name.substring(0, 60)}`
 				statusText = "Eliminado"
+			} else if (am.isActive) {
+				label = `${am.name.substring(0, 80)}`
+				statusText = "Activo"
 			} else {
-				if (!am.isActive) {
-					label = `⏸️ ${am.name.substring(0, 78)}`
-					statusText = "Pausado"
-				} else {
-					label = `${am.name.substring(0, 80)}`
-					statusText = "Activo"
-				}
+				label = `⏸️ ${am.name.substring(0, 78)}`
+				statusText = "Pausado"
 			}
 
 			return new StringSelectMenuOptionBuilder()
@@ -411,6 +441,12 @@ export class AutoMessageCommand extends BaseCommand {
 		}
 	}
 
+	@Subcommand({ name: "info", description: "Muestra info de un mensaje o lista todos con un menú" })
+	@StringOption({ name: "id", description: "ID del mensaje automático (opcional, sin ID muestra lista)" })
+	@BooleanOption({
+		name: "ver-eliminados",
+		description: "Mostrar mensajes automáticos eliminados (solo si no se proporciona ID)"
+	})
 	async info (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
@@ -432,6 +468,8 @@ export class AutoMessageCommand extends BaseCommand {
 		}
 	}
 
+	@Subcommand({ name: "eliminar", description: "Elimina un mensaje automático" })
+	@StringOption({ name: "id", description: "ID del mensaje automático a eliminar", required: true })
 	async eliminar (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
@@ -540,6 +578,8 @@ export class AutoMessageCommand extends BaseCommand {
 		}
 	}
 
+	@Subcommand({ name: "pausar", description: "Pausa un mensaje automático sin eliminarlo" })
+	@StringOption({ name: "id", description: "ID del mensaje automático a pausar", required: true })
 	async pausar (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
@@ -572,6 +612,8 @@ export class AutoMessageCommand extends BaseCommand {
 		await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
 	}
 
+	@Subcommand({ name: "reanudar", description: "Reanuda un mensaje automático pausado" })
+	@StringOption({ name: "id", description: "ID del mensaje automático a reanudar", required: true })
 	async reanudar (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
@@ -604,6 +646,7 @@ export class AutoMessageCommand extends BaseCommand {
 		await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
 	}
 
+	@Subcommand({ name: "variables", description: "Muestra la lista de variables disponibles para usar en mensajes" })
 	async variables (context: CommandContext): Promise<void> {
 		const { interaction } = context
 
@@ -626,128 +669,3 @@ export class AutoMessageCommand extends BaseCommand {
 		await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
 	}
 }
-
-registerCommand(AutoMessageCommand, {
-	name: "automensaje",
-	description: "Gestiona los mensajes automáticos del servidor",
-	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages,
-	guildOnly: true
-})
-
-registerSubCommand(AutoMessageCommand, "crear", {
-	name: "crear",
-	description: "Crea un nuevo mensaje automático",
-	options: [
-		{
-			name: "nombre",
-			description: "Nombre identificador del mensaje automático",
-			type: OptionType.STRING,
-			required: true
-		},
-		{
-			name: "mensaje",
-			description: "El mensaje que se enviará",
-			type: OptionType.STRING,
-			required: false
-		},
-		{
-			name: "embed",
-			description: "El embed en formato JSON que se enviará",
-			type: OptionType.STRING,
-			required: false
-		},
-		{
-			name: "cron",
-			description: "Expresión cron (solo para canales, ej: '0 0 9 * * *' = 9:00 AM)",
-			type: OptionType.STRING,
-			required: false
-		},
-		{
-			name: "canal",
-			description: "Canal donde enviar el mensaje",
-			type: OptionType.CHANNEL,
-			required: false
-		},
-		{
-			name: "categoria",
-			description: "Categoría donde enviar el mensaje (a todos los canales de texto)",
-			type: OptionType.CHANNEL,
-			required: false
-		},
-		{
-			name: "tiempo",
-			description: "Tiempo de espera para enviar un mensaje tras la creación de un canal (en segundos)",
-			type: OptionType.INTEGER,
-			required: false
-		},
-		{
-			name: "anclar",
-			description: "Anclar los mensajes automaticos que se envian al crear un canal",
-			type: OptionType.BOOLEAN,
-			required: false
-		}
-	]
-})
-
-registerSubCommand(AutoMessageCommand, "eliminar", {
-	name: "eliminar",
-	description: "Elimina un mensaje automático",
-	options: [
-		{
-			name: "id",
-			description: "ID del mensaje automático a eliminar",
-			type: OptionType.STRING,
-			required: true
-		}
-	]
-})
-
-registerSubCommand(AutoMessageCommand, "info", {
-	name: "info",
-	description: "Muestra info de un mensaje o lista todos con un menú",
-	options: [
-		{
-			name: "id",
-			description: "ID del mensaje automático (opcional, sin ID muestra lista)",
-			type: OptionType.STRING,
-			required: false
-		},
-		{
-			name: "ver-eliminados",
-			description: "Mostrar mensajes automáticos eliminados (solo si no se proporciona ID)",
-			type: OptionType.BOOLEAN,
-			required: false
-		}
-	]
-})
-
-registerSubCommand(AutoMessageCommand, "pausar", {
-	name: "pausar",
-	description: "Pausa un mensaje automático sin eliminarlo",
-	options: [
-		{
-			name: "id",
-			description: "ID del mensaje automático a pausar",
-			type: OptionType.STRING,
-			required: true
-		}
-	]
-})
-
-registerSubCommand(AutoMessageCommand, "reanudar", {
-	name: "reanudar",
-	description: "Reanuda un mensaje automático pausado",
-	options: [
-		{
-			name: "id",
-			description: "ID del mensaje automático a reanudar",
-			type: OptionType.STRING,
-			required: true
-		}
-	]
-})
-
-registerSubCommand(AutoMessageCommand, "variables", {
-	name: "variables",
-	description: "Muestra la lista de variables disponibles para usar en mensajes"
-})
