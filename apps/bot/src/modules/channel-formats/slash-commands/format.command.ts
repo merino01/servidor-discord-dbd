@@ -1,10 +1,12 @@
 import { Injectable } from "@/core/container"
 import { SlashCommand, Subcommand } from "@core/decorators/command.decorators"
-import { CommandContext, OptionType } from "@/core/types"
+import { CommandContext } from "@/core/types"
 import {
 	PermissionFlagsBits,
 	EmbedBuilder,
-	MessageFlags
+	MessageFlags,
+	ApplicationCommandOptionType,
+	ChannelType
 } from "discord.js"
 import { botLogger } from "@/core/logger"
 import { FormatService } from "../services/format.service"
@@ -30,37 +32,38 @@ export class FormatCommand {
 			{
 				name: "nombre",
 				description: "Nombre identificador del formato",
-				type: OptionType.STRING,
+				type: ApplicationCommandOptionType.String,
 				required: true
 			},
 			{
 				name: "canal",
 				description: "Canal a configurar",
-				type: OptionType.CHANNEL,
+				type: ApplicationCommandOptionType.Channel,
+				channelTypes: [ChannelType.GuildText],
 				required: true
 			},
 			{
 				name: "patron",
 				description: "Patrón regex (ej: \\d+ para solo números)",
-				type: OptionType.STRING,
+				type: ApplicationCommandOptionType.String,
 				required: true
 			},
 			{
 				name: "flags",
 				description: "Flags del regex (ej: i para case-insensitive)",
-				type: OptionType.STRING,
+				type: ApplicationCommandOptionType.String,
 				required: false
 			},
 			{
 				name: "eliminar",
 				description: "Eliminar mensajes que no cumplan (default: true)",
-				type: OptionType.BOOLEAN,
+				type: ApplicationCommandOptionType.Boolean,
 				required: false
 			},
 			{
 				name: "notificar",
 				description: "Notificar al usuario (default: true)",
-				type: OptionType.BOOLEAN,
+				type: ApplicationCommandOptionType.Boolean,
 				required: false
 			}
 		]
@@ -122,7 +125,7 @@ export class FormatCommand {
 			{
 				name: "ver-eliminados",
 				description: "Mostrar formatos eliminados",
-				type: OptionType.BOOLEAN,
+				type: ApplicationCommandOptionType.Boolean,
 				required: false
 			}
 		]
@@ -166,7 +169,7 @@ export class FormatCommand {
 			{
 				name: "id",
 				description: "ID del formato a eliminar",
-				type: OptionType.STRING,
+				type: ApplicationCommandOptionType.String,
 				required: true
 			}
 		]
@@ -215,7 +218,7 @@ export class FormatCommand {
 			{
 				name: "id",
 				description: "ID del formato a pausar",
-				type: OptionType.STRING,
+				type: ApplicationCommandOptionType.String,
 				required: true
 			}
 		]
@@ -261,7 +264,7 @@ export class FormatCommand {
 			{
 				name: "id",
 				description: "ID del formato a reanudar",
-				type: OptionType.STRING,
+				type: ApplicationCommandOptionType.String,
 				required: true
 			}
 		]

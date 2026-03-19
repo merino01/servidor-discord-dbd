@@ -1,7 +1,13 @@
-import { ChannelType, MessageFlags, PermissionFlagsBits, VoiceBasedChannel } from "discord.js"
+import {
+	ChannelType,
+	MessageFlags,
+	PermissionFlagsBits,
+	VoiceBasedChannel,
+	ApplicationCommandOptionType
+} from "discord.js"
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@/core/types"
+import { CommandContext } from "@/core/types"
 import { RandomChannelModel } from "@org/mongo"
 import { botLogger } from "@/core/logger"
 
@@ -10,6 +16,14 @@ const randomChannelLogger = botLogger.child("random-channel")
 class RandomChannelCommand extends BaseCommand {
 	public async configurar (context: CommandContext) {
 		const { interaction } = context
+
+		if (!interaction.guild) {
+			await interaction.reply({
+				content: "Este comando solo funciona en servidores.",
+				flags: MessageFlags.Ephemeral
+			})
+			return
+		}
 
 		const channelIds = interaction.options.getString("canales")
 		const category = interaction.options.getChannel("categoria")
@@ -39,7 +53,7 @@ class RandomChannelCommand extends BaseCommand {
 		await channel.setPosition(0)
 
 		RandomChannelModel.insertOne({
-			guildId: interaction.guild!.id,
+			guildId: interaction.guild.id,
 			mainChannelId: channel.id,
 			channelIds: channelIds ? channelIds.split(",").map((id) => id.trim()) : [],
 			categoryId: category ? category.id : null,
@@ -56,13 +70,6 @@ class RandomChannelCommand extends BaseCommand {
 		const { interaction } = context
 
 		const channel = interaction.options.getChannel("canal", true) as VoiceBasedChannel
-		if (channel.type !== ChannelType.GuildVoice) {
-			await interaction.reply({
-				content: "El canal proporcionado no es válido.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
@@ -109,19 +116,20 @@ registerSubCommand(RandomChannelCommand, "configurar", {
 		{
 			name: "canales",
 			description: "Los canales de voz a configurar (ids separados por comas).",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "categoria",
 			description: "La categoría de canales a configurar.",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes:[ChannelType.GuildCategory],
 			required: false
 		},
 		{
 			name: "excluir-canales",
 			description: "Definir si excluir los canales en lugar de incluirlos.",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		}
 	]
@@ -133,7 +141,8 @@ registerSubCommand(RandomChannelCommand, "eliminar", {
 	options: [{
 		name: "canal",
 		description: "El canal aleatorio a eliminar.",
-		type: OptionType.CHANNEL,
+		type: ApplicationCommandOptionType.Channel,
+		channelTypes: [ChannelType.GuildVoice],
 		required: true
 	}]
 })

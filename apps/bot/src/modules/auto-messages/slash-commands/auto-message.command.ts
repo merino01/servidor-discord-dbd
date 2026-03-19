@@ -3,8 +3,6 @@ import {
 	SlashCommand,
 	Subcommand,
 	StringOption,
-	ChannelOption,
-	IntegerOption,
 	BooleanOption
 } from "@/core/decorators/command.decorators"
 import { CommandContext } from "@types"
@@ -18,7 +16,8 @@ import {
 	StringSelectMenuOptionBuilder,
 	GuildBasedChannel,
 	APIInteractionDataResolvedChannel,
-	ChatInputCommandInteraction
+	ChatInputCommandInteraction,
+	ApplicationCommandOptionType
 } from "discord.js"
 import { AutoMessageModel, AutoMessageTargetType, IAutoMessage } from "@org/mongo"
 import { botLogger } from "@/core/logger"
@@ -45,7 +44,6 @@ interface CreateOptions {
 	guildOnly: true
 })
 export class AutoMessageCommand extends BaseCommand {
-
 	private validateCronField (field: string): boolean {
 		return /^(\*|\d{1,2}|\*\/\d{1,2})$/.test(field)
 	}
@@ -86,15 +84,6 @@ export class AutoMessageCommand extends BaseCommand {
 		return null
 	}
 
-	private validateCategoryType (
-		category: TargetChannel
-	): string | null {
-		if (category && category.type !== ChannelType.GuildCategory) {
-			return "❌ El canal especificado no es una categoría."
-		}
-		return null
-	}
-
 	private validateMessage (
 		message: string | null,
 		embed: string | null
@@ -117,9 +106,6 @@ export class AutoMessageCommand extends BaseCommand {
 
 		const cronRequirementsError = this.validateCronRequirements(channel, category, cronExpression)
 		if (cronRequirementsError) { return cronRequirementsError }
-
-		const categoryTypeError = this.validateCategoryType(category)
-		if (categoryTypeError) { return categoryTypeError }
 
 		const messageError = this.validateMessage(message, messageEmbed)
 		if (messageError) { return messageError }
@@ -234,21 +220,55 @@ export class AutoMessageCommand extends BaseCommand {
 		await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral })
 	}
 
-	@Subcommand({ name: "crear", description: "Crea un nuevo mensaje automático" })
-	@StringOption({ name: "nombre", description: "Nombre identificador del mensaje automático", required: true })
-	@StringOption({ name: "mensaje", description: "El mensaje que se enviará" })
-	@StringOption({ name: "embed", description: "El embed en formato JSON que se enviará" })
-	@StringOption({ name: "cron", description: "Expresión cron (solo para canales, ej: '0 0 9 * * *' = 9:00 AM)" })
-	@ChannelOption({ name: "canal", description: "Canal donde enviar el mensaje" })
-	@ChannelOption({
-		name: "categoria",
-		description: "Categoría donde enviar el mensaje (a todos los canales de texto)"
+	@Subcommand({
+		name: "crear",
+		description: "Crea un nuevo mensaje automático",
+		options: [
+			{
+				name: "nombre",
+				description: "Nombre identificador del mensaje automático",
+				type: ApplicationCommandOptionType.String,
+				required: true
+			},
+			{
+				name: "mensaje",
+				description: "El mensaje que se enviará",
+				type: ApplicationCommandOptionType.String
+			},
+			{
+				name: "embed",
+				description: "El embed en formato JSON que se enviará",
+				type: ApplicationCommandOptionType.String
+			},
+			{
+				name: "cron",
+				description: "Expresión cron (solo para canales, ej: '0 0 9 * * *' = 9:00 AM)",
+				type: ApplicationCommandOptionType.String
+			},
+			{
+				name: "canal",
+				description: "Canal donde enviar el mensaje",
+				type: ApplicationCommandOptionType.Channel,
+				channelTypes: [ChannelType.GuildText]
+			},
+			{
+				name: "categoria",
+				description: "Categoría donde enviar el mensaje (a todos los canales de texto)",
+				type: ApplicationCommandOptionType.Channel,
+				channelTypes: [ChannelType.GuildCategory]
+			},
+			{
+				name: "tiempo",
+				description: "Tiempo de espera para enviar un mensaje tras la creación de un canal (en segundos)",
+				type: ApplicationCommandOptionType.Integer
+			},
+			{
+				name: "anclar",
+				description: "Anclar los mensajes automaticos que se envian al crear un canal",
+				type: ApplicationCommandOptionType.Boolean
+			}
+		]
 	})
-	@IntegerOption({
-		name: "tiempo",
-		description: "Tiempo de espera para enviar un mensaje tras la creación de un canal (en segundos)"
-	})
-	@BooleanOption({ name: "anclar", description: "Anclar los mensajes automaticos que se envian al crear un canal" })
 	private async processCrear (interaction: ChatInputCommandInteraction, guildId: string): Promise<void> {
 		const options = this.getCrearOptions(interaction)
 

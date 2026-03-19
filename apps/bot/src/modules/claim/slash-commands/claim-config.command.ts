@@ -2,14 +2,8 @@ import { Injectable } from "@/core/container"
 import { SlashCommand, Subcommand } from "@core/decorators/command.decorators"
 import { botLogger } from "@/core/logger"
 import { CommandContext, OptionType } from "@/core/types"
-import {
-	ChannelType,
-	EmbedBuilder,
-	GuildChannel,
-	MessageFlags,
-	PermissionFlagsBits
-} from "discord.js"
-import { ClaimConfigService } from "../services/claim-config.service"
+import { ClaimConfigModel } from "@org/mongo"
+import { ApplicationCommandOptionType, ChannelType, EmbedBuilder, GuildChannel, MessageFlags, PermissionFlagsBits } from "discord.js"
 
 const claimLogger = botLogger.child("claim-config")
 
@@ -31,10 +25,6 @@ export class ClaimConfigCommand {
 		return new EmbedBuilder({ description })
 	}
 
-	private isValidCategory (category: ChannelType): boolean {
-		return category === ChannelType.GuildCategory
-	}
-
 	@Subcommand({
 		name: "añadir-categoria",
 		description: "Añade una categoría donde funcionará el comando claim.",
@@ -42,7 +32,8 @@ export class ClaimConfigCommand {
 			{
 				name: "categoria",
 				description: "Categoria donde funcionará el comando",
-				type: OptionType.CHANNEL,
+				type: ApplicationCommandOptionType.Channel,
+				channelTypes: [ChannelType.GuildCategory],
 				required: true
 			}
 		]
@@ -52,14 +43,6 @@ export class ClaimConfigCommand {
 		if (!guild) { return }
 
 		const category = interaction.options.getChannel("categoria", true) as GuildChannel
-
-		if (!this.isValidCategory(category.type)) {
-			await interaction.reply({
-				content: "La categoría seleccionada no es válida.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
 
 		await interaction.deferReply()
 
@@ -99,7 +82,8 @@ export class ClaimConfigCommand {
 			{
 				name: "categoria",
 				description: "Categoria donde dejará de funcionar el comando",
-				type: OptionType.CHANNEL,
+				type: ApplicationCommandOptionType.Channel,
+				channelTypes: [ChannelType.GuildCategory],
 				required: true
 			}
 		]
@@ -110,11 +94,6 @@ export class ClaimConfigCommand {
 
 		const category = interaction.options.getChannel("categoria", true)
 
-		if (!this.isValidCategory(category.type)) {
-			await interaction.reply({ content: "Selecciona una categoría valida.", flags: MessageFlags.Ephemeral })
-			return
-		}
-
 		await interaction.deferReply()
 
 		try {
@@ -124,7 +103,9 @@ export class ClaimConfigCommand {
 			})
 		} catch (error) {
 			claimLogger.error("Error al intentar eliminar la categoria:", error)
-			await interaction.editReply({ content: "Ha habido un error al eliminar la categoría" })
+			await interaction.editReply({
+				content: "Ha habido un error al eliminar la categoría"
+			})
 		}
 	}
 }

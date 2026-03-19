@@ -1,7 +1,7 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
-import { PermissionFlagsBits, EmbedBuilder, MessageFlags } from "discord.js"
+import { CommandContext } from "@types"
+import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ApplicationCommandOptionType, ChannelType } from "discord.js"
 import { LogConfigModel, LogType, ILogConfig } from "@org/mongo"
 import { botLogger } from "@/core/logger"
 
@@ -211,7 +211,7 @@ registerSubCommand(LogsCommand, "configurar", {
 		{
 			name: "tipo",
 			description: "Tipo de log a configurar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true,
 			choices: [
 				{ name: "📝 Comandos", value: LogType.COMMANDS },
@@ -225,13 +225,14 @@ registerSubCommand(LogsCommand, "configurar", {
 		{
 			name: "habilitado",
 			description: "Activar o desactivar este tipo de log",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: true
 		},
 		{
 			name: "canal",
 			description: "Canal donde se enviarán los logs",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildText],
 			required: false
 		}
 	]

@@ -28,9 +28,9 @@ const leaderPermissionsMap = {
 		PermissionFlagsBits.CreatePublicThreads
 	],
 	"voice": [
-		PermissionFlagsBits.MuteMembers,
-		PermissionFlagsBits.DeafenMembers,
-		PermissionFlagsBits.MoveMembers
+	// PermissionFlagsBits.MuteMembers
+	// PermissionFlagsBits.DeafenMembers,
+		// PermissionFlagsBits.MoveMembers
 	]
 } as const
 
