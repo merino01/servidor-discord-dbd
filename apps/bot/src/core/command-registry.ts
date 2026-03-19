@@ -1,7 +1,8 @@
 import { Client, Collection } from "discord.js"
 import { ICommand } from "@types"
-import { getRegisteredCommands } from "./command-register"
+import { getRegisteredCommands, buildCommandData, executeCommand } from "./command-register"
 import { botLogger } from "@core/logger"
+import { container } from "./container"
 
 /**
  * Registro de comandos del bot
@@ -46,8 +47,12 @@ export class CommandRegistry {
 
 		for (const [name, CommandClass] of registeredCommands) {
 			try {
-				const command = new CommandClass()
-				this.register(command)
+				const instance = container.resolve(CommandClass)
+				const data = buildCommandData(CommandClass)
+				this.register({
+					data,
+					execute: (context) => executeCommand(instance, context)
+				})
 			} catch (error) {
 				botLogger.error(`Error instanciando comando ${name}: `, error)
 			}
@@ -57,8 +62,8 @@ export class CommandRegistry {
 	}
 
 	/**
-   * Registra todos los comandos en Discord (deployment)
-   */
+	 * Registra todos los comandos en Discord (deployment)
+	 */
 	async deployCommands (guildId?: string): Promise<void> {
 		const commands = this.getAll().map((cmd) => cmd.data.toJSON())
 

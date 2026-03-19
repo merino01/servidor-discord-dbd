@@ -29,12 +29,7 @@
 							"output": "."
 						}
 					],
-					"esbuildOptions": {
-						"sourcemap": false,
-						"outExtension": {
-							".js": ".js"
-						}
-					}
+					"esbuildConfig": "apps/bot/esbuild.config.cjs"
 				},
 				"configurations": {
 					"development": {},
