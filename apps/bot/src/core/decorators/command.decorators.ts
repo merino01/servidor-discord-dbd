@@ -50,28 +50,27 @@ import {
 import {
 	SlashCommandOptions,
 	SubCommandOptions,
-	SubCommandGroupOptions,
-	CommandOption,
-	OptionType
+	SubCommandGroupOptions
 } from "@types"
+import { ApplicationCommandOption, ApplicationCommandOptionType } from "discord.js"
 
 // ---------------------------------------------------------------------------
 // Almacenamiento interno de opciones por método
 // Clave: prototype de la clase   Valor: Map<nombreMétodo, CommandOption[]>
 // ---------------------------------------------------------------------------
-const methodOptionsRegistry = new WeakMap<object, Map<string, CommandOption[]>>()
+const methodOptionsRegistry = new WeakMap<object, Map<string, ApplicationCommandOption[]>>()
 
-function getOrCreateMethodOptions (target: object, method: string): CommandOption[] {
+function getOrCreateMethodOptions (target: object, method: string): ApplicationCommandOption[] {
 	if (!methodOptionsRegistry.has(target)) {
 		methodOptionsRegistry.set(target, new Map())
 	}
 	// get() never returns undefined: we just ensured the key exists above
-	const classMap = methodOptionsRegistry.get(target) as Map<string, CommandOption[]>
+	const classMap = methodOptionsRegistry.get(target) as Map<string, ApplicationCommandOption[]>
 	if (!classMap.has(method)) {
 		classMap.set(method, [])
 	}
 	// Same: get() is safe after the has() check above
-	return classMap.get(method) as CommandOption[]
+	return classMap.get(method) as ApplicationCommandOption[]
 }
 
 /**
@@ -147,12 +146,12 @@ export interface NumberOptionMeta extends BaseOptionMeta {
 
 type OptionChoiceMeta = BaseOptionMeta & { choices?: Array<{ name: string; value: string | number }> }
 
-function createOptionDecorator (type: OptionType, meta: OptionChoiceMeta) {
+function createOptionDecorator (type: ApplicationCommandOptionType, meta: OptionChoiceMeta) {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	return function (target: any, propertyKey: string): void {
 		const opts = getOrCreateMethodOptions(target, propertyKey)
 		// unshift para que el orden en el array coincida con el orden visual del código
-		opts.unshift({ type, ...meta })
+		opts.unshift({ ...meta, type } as ApplicationCommandOption)
 	}
 }
 
@@ -168,47 +167,47 @@ function createOptionDecorator (type: OptionType, meta: OptionChoiceMeta) {
  * ```
  */
 export function StringOption (meta: StringOptionMeta) {
-	return createOptionDecorator(OptionType.STRING, meta)
+	return createOptionDecorator(ApplicationCommandOptionType.String, meta)
 }
 
 /**
  * Agrega una opción de tipo `INTEGER` al comando o subcomando.
  */
 export function IntegerOption (meta: NumberOptionMeta) {
-	return createOptionDecorator(OptionType.INTEGER, meta)
+	return createOptionDecorator(ApplicationCommandOptionType.Integer, meta)
 }
 
 /**
  * Agrega una opción de tipo `NUMBER` (decimal) al comando o subcomando.
  */
 export function NumberOption (meta: NumberOptionMeta) {
-	return createOptionDecorator(OptionType.NUMBER, meta)
+	return createOptionDecorator(ApplicationCommandOptionType.Number, meta)
 }
 
 /**
  * Agrega una opción de tipo `BOOLEAN` al comando o subcomando.
  */
 export function BooleanOption (meta: BaseOptionMeta) {
-	return createOptionDecorator(OptionType.BOOLEAN, meta)
+	return createOptionDecorator(ApplicationCommandOptionType.Boolean, meta)
 }
 
 /**
  * Agrega una opción de tipo `USER` al comando o subcomando.
  */
 export function UserOption (meta: BaseOptionMeta) {
-	return createOptionDecorator(OptionType.USER, meta)
+	return createOptionDecorator(ApplicationCommandOptionType.User, meta)
 }
 
 /**
  * Agrega una opción de tipo `CHANNEL` al comando o subcomando.
  */
 export function ChannelOption (meta: BaseOptionMeta) {
-	return createOptionDecorator(OptionType.CHANNEL, meta)
+	return createOptionDecorator(ApplicationCommandOptionType.Channel, meta)
 }
 
 /**
  * Agrega una opción de tipo `ROLE` al comando o subcomando.
  */
 export function RoleOption (meta: BaseOptionMeta) {
-	return createOptionDecorator(OptionType.ROLE, meta)
+	return createOptionDecorator(ApplicationCommandOptionType.Role, meta)
 }

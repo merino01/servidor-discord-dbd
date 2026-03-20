@@ -1,9 +1,16 @@
 import { Injectable } from "@/core/container"
 import { SlashCommand, Subcommand } from "@core/decorators/command.decorators"
 import { botLogger } from "@/core/logger"
-import { CommandContext, OptionType } from "@/core/types"
-import { ClaimConfigModel } from "@org/mongo"
-import { ApplicationCommandOptionType, ChannelType, EmbedBuilder, GuildChannel, MessageFlags, PermissionFlagsBits } from "discord.js"
+import { CommandContext } from "@/core/types"
+import {
+	ApplicationCommandOptionType,
+	ChannelType,
+	EmbedBuilder,
+	GuildChannel,
+	MessageFlags,
+	PermissionFlagsBits
+} from "discord.js"
+import { ClaimConfigService } from "../services/claim-config.service"
 
 const claimLogger = botLogger.child("claim-config")
 

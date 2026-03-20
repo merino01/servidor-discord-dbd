@@ -128,11 +128,15 @@ function addOption (target: any, option: any): void {
 		)
 		break
 	case 7: // CHANNEL
-		target.addChannelOption((opt: any) => opt
-			.setName(option.name)
-			.setDescription(option.description)
-			.setRequired(option.required ?? false)
-		)
+		target.addChannelOption((opt: any) => {
+			opt.setName(option.name)
+				.setDescription(option.description)
+				.setRequired(option.required ?? false)
+			if (option.channelTypes) {
+				opt.addChannelTypes(...option.channelTypes)
+			}
+			return opt
+		})
 		break
 	case 8: // ROLE
 		target.addRoleOption((opt: any) => opt

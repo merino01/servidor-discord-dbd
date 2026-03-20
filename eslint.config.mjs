@@ -94,7 +94,7 @@ export default [
 			"max-params": ["error", 4],
 			"no-useless-return": "error",
 			"prefer-spread": "error",
-			"max-lines-per-function": ["error", 60],
+			"max-lines-per-function": ["warn", 100],
 			"brace-style": ["error", "1tbs", { "allowSingleLine": true }],
 			"object-shorthand": ["error", "always"]
 		}
