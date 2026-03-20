@@ -1,8 +1,9 @@
 import { Module } from "@/core/decorators/module.decorator"
 import { EchoCommand } from "./slash-commands/echo.command"
-import "./components/echo-modal"
+import { EchoModalComponent } from "./components/echo-modal"
 
 @Module({
-	commands: [EchoCommand]
+	commands: [EchoCommand],
+	providers: [EchoModalComponent]
 })
 export class EchoModule{}
