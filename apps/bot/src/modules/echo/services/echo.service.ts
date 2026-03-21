@@ -2,7 +2,6 @@ import {
 	APIInteractionDataResolvedChannel,
 	CategoryChannel,
 	ChannelType,
-	ChatInputCommandInteraction,
 	EmbedBuilder,
 	GuildBasedChannel,
 	LabelBuilder,
@@ -13,6 +12,14 @@ import {
 } from "discord.js"
 import { sendMessage } from "../utils/send-message"
 import { botLogger } from "@/core/logger"
+
+interface EchoInput {
+	channel: TextChannel
+	message: string | null
+	text: boolean | null
+	embedJson: string | null
+	category?: CategoryChannel | null
+}
 
 const echoLogger = botLogger.child("echo")
 
@@ -36,30 +43,9 @@ export class EchoService {
 	}
 
 	async validateAndGetInputs (
-		interaction: ChatInputCommandInteraction
-	): Promise<{
-			success: boolean
-			channel?: TextChannel
-			message?: string | null
-			text?: boolean | null
-			embedJson?: string | null
-			category?: CategoryChannel | null
-			error?: string
-		}> {
-		if (!interaction.guildId) {
-			return {
-				success: false,
-				error: "❌ Este comando solo funciona en servidores."
-			}
-		}
-
-		const targetChannel = interaction.options.getChannel("canal") ?? interaction.channel as TextChannel
-		const message = interaction.options.getString("mensaje")
-		const embedJson = interaction.options.getString("embed")
-		const text = interaction.options.getBoolean("texto")
-		const category = interaction.options.getChannel("categoría")
-
-		const channelError = this.validateChannel(targetChannel)
+		{ channel, message, embedJson, text, category }: EchoInput
+	): Promise< Partial<EchoInput> & { success: boolean; error?: string } > {
+		const channelError = this.validateChannel(channel)
 		if (channelError) {
 			return { success: false, error: channelError }
 		}
@@ -71,7 +57,7 @@ export class EchoService {
 
 		return {
 			success: true,
-			channel: targetChannel as TextChannel,
+			channel: channel as TextChannel,
 			category: category as CategoryChannel,
 			message,
 			text,

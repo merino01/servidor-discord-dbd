@@ -3,8 +3,8 @@ import { parseEmbed } from "./embed"
 
 export async function sendMessage (
 	channel: TextChannel,
-	message: string | null,
-	embedJson: string | null
+	message?: string | null,
+	embedJson?: string | null
 ): Promise<{ success: boolean; error?: string }> {
 	const messagePayload: { content?: string; embeds?: EmbedBuilder[] } = {}
 

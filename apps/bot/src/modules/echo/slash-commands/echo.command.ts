@@ -1,6 +1,6 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { CommandContext } from "@types"
-import { ApplicationCommandOptionType, ChannelType, MessageFlags } from "discord.js"
+import { ApplicationCommandOptionType, CategoryChannel, ChannelType, MessageFlags, TextChannel } from "discord.js"
 import { botLogger } from "@/core/logger"
 import { sendMessage } from "../utils/send-message"
 import { buildConfirmEmbed, buildErrorEmbed } from "../utils/embed"
@@ -55,7 +55,21 @@ export class EchoCommand extends BaseCommand {
 	}
 
 	protected override async run ({ interaction }: CommandContext): Promise<void> {
-		const validation = await this.service.validateAndGetInputs(interaction)
+		const inputChannel = interaction.options.getChannel("canal") as TextChannel ??
+			interaction.channel as TextChannel
+		const inputMessage = interaction.options.getString("mensaje")
+		const inputEmbedJson = interaction.options.getString("embed")
+		const inputText = interaction.options.getBoolean("texto")
+		const inputCategory = interaction.options.getChannel("categoría") as CategoryChannel
+
+		const validation = await this.service.validateAndGetInputs({
+			channel: inputChannel,
+			message: inputMessage,
+			embedJson: inputEmbedJson,
+			text: inputText,
+			category: inputCategory
+		})
+
 		if (!validation.success || !validation.channel) {
 			await interaction.reply({
 				content: validation.error ?? "❌ Error de validación",
@@ -83,8 +97,8 @@ export class EchoCommand extends BaseCommand {
 
 		const result = await sendMessage(
 			channel,
-			message ?? null,
-			embedJson ?? null
+			message,
+			embedJson
 		)
 
 		if (!result.success) {
@@ -109,3 +123,4 @@ export class EchoCommand extends BaseCommand {
 		)
 	}
 }
+

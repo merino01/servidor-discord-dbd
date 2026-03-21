@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, MessageFlags } from "discord.js"
+import { SlashCommandBuilder, MessageFlags, InteractionContextType } from "discord.js"
 import {
 	SlashCommandOptions,
 	SubCommandOptions,
@@ -199,6 +199,11 @@ export function buildCommandData (CommandClass: any): SlashCommandBuilder {
 	if (metadata.permissions) {
 		data.setDefaultMemberPermissions(metadata.permissions)
 	}
+
+	// Lo limita solo a servidores si no se ha especificado explícitamente que no es guildOnly
+	data.setContexts(metadata.guildOnly === false
+		 ? [InteractionContextType.BotDM, InteractionContextType.Guild]
+		 : [InteractionContextType.Guild])
 
 	const subcommands = getSubCommandsMetadata(CommandClass)
 	const groups = getSubCommandGroupsMetadata(CommandClass)
