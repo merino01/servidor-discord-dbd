@@ -23,7 +23,7 @@ const welcomeMessageLogger = botLogger.child("welcome-message")
 export class WelcomeMessageService {
 	constructor (private readonly repository: WelcomeMessageRepository) {}
 
-	async validateFields (
+	private async validateFields (
 		{
 			embedString,
 			enabled,
@@ -49,66 +49,6 @@ export class WelcomeMessageService {
 		if (provideError) { return provideError }
 
 		return null
-	}
-
-	async updateConfig (options:  ValidateOptions): Promise<CommandReply> {
-		const error = await this.validateFields(options)
-		if (error) { return { content: error } }
-
-		const config = await this.buildUpdate(options)
-		if (config.error) { return { content: config.error } }
-
-		try {
-			const update = await this.repository.upsert(options.guildId!, config.newConfig)
-			const embed = this.buildConfirmationEmbed(update.enabled, update.waitTime)
-
-			return { embeds: [embed] }
-		} catch (e) {
-			welcomeMessageLogger.error("Error al actualizar la configuración de mensajes directos al unirse:", e)
-			return  {
-				content: "Ha ocurrido un error al actualizar la configuración. Por favor, inténtalo de nuevo más tarde."
-			}
-		}
-	}
-
-	async viewConfig (guildId: string): Promise<{
-		reply: CommandReply,
-		message?: InteractionReplyOptions
-	}> {
-		try {
-			const config = await this.repository.findByGuild(guildId)
-			if (!config) {
-				return { reply:
-					 { content: "No hay nada configurado, usa ``/welcome-message configurar`` para configurarlo" }
-				}
-			}
-
-			const embed = this.buildConfirmationEmbed(config.enabled, config.waitTime)
-			const example: InteractionReplyOptions = { ...createMessage(config), flags: MessageFlags.Ephemeral }
-			return {
-				reply: {
-					embeds: [embed]
-				},
-				message: example
-			}
-		} catch (error) {
-			welcomeMessageLogger.error(error instanceof Error ? error.message : String(error))
-			return { reply: {
-				content: "No hay nada configurado, usa ``/welcome-message configurar`` para configurarlo"
-			}
-			}
-		}
-	}
-
-	async delete (guildId: string): Promise<CommandReply> {
-		try {
-			await this.repository.delete(guildId)
-			return { content: "Configuración eliminada correctamente" }
-		} catch (error) {
-			welcomeMessageLogger.error("Error al eliminar la configuración:",
-				error instanceof Error ? error.message : String(error))
-			return { content: "Ha ocurrido un error" }
-		}
 	}
 
 	private checkFirstTimeRequired (
@@ -171,7 +111,7 @@ export class WelcomeMessageService {
 		}
 	}
 
-	async buildUpdate ({
+	private async buildUpdate ({
 		enabled,
 		message,
 		embedString,
@@ -195,5 +135,66 @@ export class WelcomeMessageService {
 		}
 
 		return { newConfig, error }
+	}
+
+	// Funciones directas de los comandos
+	async updateConfig (options:  ValidateOptions): Promise<CommandReply> {
+		const error = await this.validateFields(options)
+		if (error) { return { content: error } }
+
+		const config = await this.buildUpdate(options)
+		if (config.error) { return { content: config.error } }
+
+		try {
+			const update = await this.repository.upsert(options.guildId!, config.newConfig)
+			const embed = this.buildConfirmationEmbed(update.enabled, update.waitTime)
+
+			return { embeds: [embed] }
+		} catch (e) {
+			welcomeMessageLogger.error("Error al actualizar la configuración de mensajes directos al unirse:", e)
+			return  {
+				content: "Ha ocurrido un error al actualizar la configuración. Por favor, inténtalo de nuevo más tarde."
+			}
+		}
+	}
+
+	async viewConfig (guildId: string): Promise<{
+		reply: CommandReply,
+		message?: InteractionReplyOptions
+	}> {
+		try {
+			const config = await this.repository.findByGuild(guildId)
+			if (!config) {
+				return { reply:
+					 { content: "No hay nada configurado, usa ``/welcome-message configurar`` para configurarlo" }
+				}
+			}
+
+			const embed = this.buildConfirmationEmbed(config.enabled, config.waitTime)
+			const example: InteractionReplyOptions = { ...createMessage(config), flags: MessageFlags.Ephemeral }
+			return {
+				reply: {
+					embeds: [embed]
+				},
+				message: example
+			}
+		} catch (error) {
+			welcomeMessageLogger.error(error instanceof Error ? error.message : String(error))
+			return { reply: {
+				content: "No hay nada configurado, usa ``/welcome-message configurar`` para configurarlo"
+			}
+			}
+		}
+	}
+
+	async delete (guildId: string): Promise<CommandReply> {
+		try {
+			await this.repository.delete(guildId)
+			return { content: "Configuración eliminada correctamente" }
+		} catch (error) {
+			welcomeMessageLogger.error("Error al eliminar la configuración:",
+				error instanceof Error ? error.message : String(error))
+			return { content: "Ha ocurrido un error" }
+		}
 	}
 }
