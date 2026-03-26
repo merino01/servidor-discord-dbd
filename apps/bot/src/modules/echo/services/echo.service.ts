@@ -8,10 +8,14 @@ import {
 	ModalBuilder,
 	TextChannel,
 	TextInputBuilder,
-	TextInputStyle
+	TextInputStyle,
+	User
 } from "discord.js"
 import { sendMessage } from "../utils/send-message"
 import { botLogger } from "@/core/logger"
+import { CommandReply } from "@/core/types"
+import { buildConfirmEmbed, buildErrorEmbed } from "../utils/embed"
+import { MODAL_REPLY } from "../constans"
 
 interface EchoInput {
 	channel: TextChannel
@@ -20,6 +24,8 @@ interface EchoInput {
 	embedJson: string | null
 	category?: CategoryChannel | null
 }
+
+export type ChannelTypeOption = "text" | "category"
 
 const echoLogger = botLogger.child("echo")
 
@@ -36,15 +42,15 @@ export class EchoService {
 
 	private validateMessageContent (message: string | null, embed: string | null, text: boolean | null): string | null {
 		if (!message && !embed && !text) {
-			return "❌ Debes proporcionar al menos un mensaje de texto o un embed."
+			return "❌ Debes proporcionar al menos un mensaje de texto, un embed o seleccionar la opción de texto."
 		}
 
 		return null
 	}
 
-	async validateAndGetInputs (
-		{ channel, message, embedJson, text, category }: EchoInput
-	): Promise< Partial<EchoInput> & { success: boolean; error?: string } > {
+	private async validateInputs (
+		{ channel, message, embedJson, text }: EchoInput
+	): Promise<{ success: boolean; error?: string } > {
 		const channelError = this.validateChannel(channel)
 		if (channelError) {
 			return { success: false, error: channelError }
@@ -56,17 +62,12 @@ export class EchoService {
 		}
 
 		return {
-			success: true,
-			channel: channel as TextChannel,
-			category: category as CategoryChannel,
-			message,
-			text,
-			embedJson
+			success: true
 		}
 	}
 
-	createModal (channelId: string): ModalBuilder {
-		const modal = new ModalBuilder().setCustomId(`echo_modal_${channelId}`).setTitle("Echo")
+	createModal (channelId: string, type: ChannelTypeOption): ModalBuilder {
+		const modal = new ModalBuilder().setCustomId(`echo_modal_${type}_${channelId}`).setTitle("Echo")
 		const textInput = new TextInputBuilder()
 			.setCustomId("echo_modal_text")
 			.setRequired(true)
@@ -120,4 +121,53 @@ export class EchoService {
 		return embed
 	}
 
+	async sendEcho (options: EchoInput & { user: User }): Promise<CommandReply> {
+		const { channel, message, embedJson, text, category } = options
+
+		const validation = await this.validateInputs({
+			channel,
+			message,
+			embedJson,
+			text
+		})
+
+		if (!validation.success || !channel) {
+			return { content: validation.error ?? "❌ Error de validación" }
+		}
+
+		if (text && category) {
+			return { content: `${MODAL_REPLY}-category` }
+		}
+
+		if (text) {
+			return { content: `${MODAL_REPLY}-text` }
+		}
+
+		if (category) {
+			const embed = await this.sendMessageCategory(category, options.user.id, message, embedJson)
+			return { embeds: [embed] }
+		}
+
+		const result = await sendMessage(
+			channel,
+			message,
+			embedJson
+		)
+
+		if (!result.success) {
+			return { embeds: [buildErrorEmbed(channel.id)] }
+		}
+
+		const confirmEmbed = buildConfirmEmbed(
+			channel.id,
+			options.user.tag,
+			embedJson !== null && embedJson !== undefined
+		)
+
+		echoLogger.info(
+			`User ${options.user.id} sent echo message to channel ${channel.id} in guild ${channel.guildId}`
+		)
+		return { embeds: [confirmEmbed] }
+	}
 }
+

@@ -1,14 +1,10 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { CommandContext } from "@types"
 import { ApplicationCommandOptionType, CategoryChannel, ChannelType, MessageFlags, TextChannel } from "discord.js"
-import { botLogger } from "@/core/logger"
-import { sendMessage } from "../utils/send-message"
-import { buildConfirmEmbed, buildErrorEmbed } from "../utils/embed"
-import { EchoService } from "../services/echo.service"
+import { ChannelTypeOption, EchoService } from "../services/echo.service"
 import { SlashCommand } from "@/core/decorators/command.decorators"
 import { Injectable } from "@/core/container"
-
-const echoLogger = botLogger.child("echo")
+import { MODAL_REPLY } from "../constans"
 
 @Injectable(EchoService)
 @SlashCommand({
@@ -62,65 +58,27 @@ export class EchoCommand extends BaseCommand {
 		const inputText = interaction.options.getBoolean("texto")
 		const inputCategory = interaction.options.getChannel("categoría") as CategoryChannel
 
-		const validation = await this.service.validateAndGetInputs({
+		const reply = await this.service.sendEcho({
 			channel: inputChannel,
 			message: inputMessage,
 			embedJson: inputEmbedJson,
 			text: inputText,
-			category: inputCategory
+			category: inputCategory,
+			user: interaction.user
 		})
 
-		if (!validation.success || !validation.channel) {
-			await interaction.reply({
-				content: validation.error ?? "❌ Error de validación",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		const { channel, message, embedJson, text, category } = validation
-
-		if (text) {
-			const modal = this.service.createModal(channel.id)
+		const modalOptions = reply.content?.split("-")
+		const type = modalOptions?.[1] as ChannelTypeOption
+		if (modalOptions?.[0] === MODAL_REPLY) {
+			const modal = this.service.createModal(type === "category" ? inputCategory.id : inputChannel.id, type)
 			await interaction.showModal(modal)
 			return
 		}
 
-		if (category) {
-			const embed = await this.service.sendMessageCategory(category, interaction.user.id, message, embedJson)
-			await interaction.reply({
-				embeds: [embed],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		const result = await sendMessage(
-			channel,
-			message,
-			embedJson
-		)
-
-		if (!result.success) {
-			await interaction.reply({
-				embeds: [buildErrorEmbed(channel.id)],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		const confirmEmbed = buildConfirmEmbed(
-			channel.id,
-			interaction.user.tag,
-			embedJson !== null && embedJson !== undefined
-		)
 		await interaction.reply({
-			embeds: [confirmEmbed],
+			...reply,
 			flags: MessageFlags.Ephemeral
 		})
-		echoLogger.info(
-			`User ${interaction.user.id} sent echo message to channel ${channel.id} in guild ${interaction.guildId}`
-		)
 	}
 }
 

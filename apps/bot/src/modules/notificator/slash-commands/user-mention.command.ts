@@ -1,91 +1,65 @@
-import { PermissionFlagsBits, ApplicationCommandOptionType } from "discord.js"
-import { BaseCommand } from "@/core/base/base-command"
-import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { botLogger } from "@/core/logger"
+import { PermissionFlagsBits, ApplicationCommandOptionType, MessageFlags } from "discord.js"
 import { CommandContext } from "@/core/types"
-import { UserNotificationModel } from "@org/mongo"
+import { SlashCommand, Subcommand } from "@/core/decorators/command.decorators"
+import { Injectable } from "@/core/container"
+import { NotificatorService } from "../services/notificator.service"
 
-const notificatorLogger = botLogger.child("notificator")
+@Injectable(NotificatorService)
+@SlashCommand({
+	name: "user-mention",
+	description: "Configura una notificación para mencionar a un usuario cuando se detecte un patrón en los mensajes.",
+	permissions: PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageMessages
+})
+export class NotificatorCommand{
+	constructor (private readonly service: NotificatorService) {}
 
-class UserMentionCommand extends BaseCommand {
-	public async crear (context: CommandContext) {
-		const { interaction } = context
-
+	@Subcommand({
+		name: "crear",
+		description: "Crea una nueva notificación de mención de usuario.",
+		options: [
+			{
+				name: "usuario",
+				description: "El usuario a mencionar cuando se detecte el patrón.",
+				required: true,
+				type: ApplicationCommandOptionType.User
+			},
+			{
+				name: "patron",
+				description: "El patrón a detectar en los mensajes (expresión regular).",
+				required: true,
+				type: ApplicationCommandOptionType.String
+			},
+			{
+				name: "canales",
+				description: "Canales donde la notificación estará activa, separados por comas",
+				required: false,
+				type: ApplicationCommandOptionType.String
+			},
+			{
+				name: "excluir_canales",
+				description: "Si se deben excluir los canales especificados en lugar de incluirlos.",
+				required: false,
+				type: ApplicationCommandOptionType.Boolean
+			}
+		]
+	})
+	async crear ({ interaction }: CommandContext) {
 		const user = interaction.options.getUser("usuario", true)
 		const patron = interaction.options.getString("patron", true)
 		const canales = interaction.options.getString("canales")
 		const excludeChannels = interaction.options.getBoolean("excluir_canales")
 
-		try {
-			new RegExp(patron)
-		} catch (error) {
-			await interaction.reply({
-				content: `El patrón no es una expresión regular válida: \`${
-					error instanceof Error ? error.message : String(error)
-				}\``,
-				ephemeral: true
-			})
-			return
-		}
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		const channelList = canales?.split(",").map((c) => c.trim()).filter((c) => c.length > 0)
-
-		const newNotification = await UserNotificationModel.create({
+		const reply = await this.service.createUserMentionNotification({
+			user,
+			patron,
+			canales,
+			excludeChannels,
 			guildId: interaction.guildId!,
-			mentionTo: user.id,
-			createdBy: interaction.user.id,
-			regexPattern: patron,
-			regexFlags: "ig",
-			channels: channelList || [],
-			excludeChannels: excludeChannels || false
+			interactionUser: interaction.user
 		})
-		notificatorLogger.info(
-			`Nueva notificación de mención creada en guild ${
-				interaction.guildId
-			} para mencionar a ${user.id} por ${interaction.user.id}`
-		)
 
-		await interaction.reply({
-			content: `Notificación creada correctamente para mencionar a ${user.tag} cuando se detecte el patrón \`${
-				patron}\`. ID de la notificación: \`${newNotification._id}\``,
-			ephemeral: true
-		})
+		await interaction.editReply(reply)
 	}
 }
-
-registerCommand(UserMentionCommand, {
-	name: "user-mention",
-	description: "Configura una notificación para mencionar a un usuario cuando se detecte un patrón en los mensajes.",
-	permissions: PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageMessages
-})
-
-registerSubCommand(UserMentionCommand, "crear", {
-	name: "crear",
-	description: "Crea una nueva notificación de mención de usuario.",
-	options: [
-		{
-			name: "usuario",
-			description: "El usuario a mencionar cuando se detecte el patrón.",
-			required: true,
-			type: ApplicationCommandOptionType.User
-		},
-		{
-			name: "patron",
-			description: "El patrón a detectar en los mensajes (expresión regular).",
-			required: true,
-			type: ApplicationCommandOptionType.String
-		},
-		{
-			name: "canales",
-			description: "Canales donde la notificación estará activa, separados por comas",
-			required: false,
-			type: ApplicationCommandOptionType.String
-		},
-		{
-			name: "excluir_canales",
-			description: "Si se deben excluir los canales especificados en lugar de incluirlos.",
-			required: false,
-			type: ApplicationCommandOptionType.Boolean
-		}
-	]
-})
