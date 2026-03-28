@@ -1,14 +1,16 @@
 import { UserStatsModel } from "@org/mongo"
 import { getConfig } from "@/core/config"
+import { Injectable } from "@/core/container"
 
-export class LevelService {
+@Injectable()
+export class LevelRepository {
 	// XP necesaria para alcanzar cada nivel (crecimiento exponencial)
-	static getXpForLevel (level: number): number {
+	public getXpForLevel (level: number): number {
 		return Math.floor(100 * Math.pow(level, 1.5))
 	}
 
 	// Calcula el nivel basado en XP total
-	static calculateLevel (totalXp: number): number {
+	public calculateLevel (totalXp: number): number {
 		let level = 1
 		let xpRequired = this.getXpForLevel(level)
 
@@ -22,7 +24,7 @@ export class LevelService {
 	}
 
 	// Obtiene XP actual y faltante para siguiente nivel
-	static getLevelProgress (
+	public getLevelProgress (
 		totalXp: number
 	): { level: number; currentXp: number; xpForNext: number } {
 		let level = 1
@@ -43,7 +45,7 @@ export class LevelService {
 	}
 
 	// Añade XP y verifica si subió de nivel
-	static async addXp (
+	public async addXp (
 		userId: string,
 		guildId: string,
 		xpAmount: number
@@ -73,22 +75,22 @@ export class LevelService {
 	}
 
 	// Obtiene configuración de XP desde config
-	static getMessageXp (): number {
+	getMessageXp (): number {
 		const config = getConfig()
 		return config.features?.stats?.messageXp ?? 5
 	}
 
-	static getVoiceXpPerMinute (): number {
+	getVoiceXpPerMinute (): number {
 		const config = getConfig()
 		return config.features?.stats?.voiceXpPerMinute ?? 2
 	}
 
-	static getMessageCooldownMs (): number {
+	getMessageCooldownMs (): number {
 		const config = getConfig()
 		return config.features?.stats?.messageCooldownMs ?? 60_000
 	}
 
-	static getLevelUpChannelId (): string | undefined {
+	getLevelUpChannelId (): string | undefined {
 		const config = getConfig()
 		const channelId = config.features?.stats?.levelUpNotificationChannelId
 		return channelId && channelId.trim() !== "" ? channelId : undefined
