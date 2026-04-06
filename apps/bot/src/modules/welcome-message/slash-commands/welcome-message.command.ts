@@ -55,14 +55,14 @@ export class WelcomeMessageCommand{
 		const waitTime = interaction.options.getInteger("tiempo")
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		const updateResponse = await this.service.updateConfig({
+		const reply = await this.service.updateConfig({
 			guildId: interaction.guildId,
 			enabled,
 			message,
 			embedString,
 			waitTime
 		})
-		await interaction.editReply(updateResponse)
+		await interaction.editReply(reply)
 	}
 
 	@Subcommand({

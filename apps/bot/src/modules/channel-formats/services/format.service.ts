@@ -6,8 +6,11 @@ import {
 	EmbedBuilder,
 	ActionRowBuilder,
 	StringSelectMenuBuilder,
-	StringSelectMenuOptionBuilder
+	StringSelectMenuOptionBuilder,
+	GuildChannel,
+	User
 } from "discord.js"
+import { CommandReply } from "@/core/types"
 
 const formatLogger = botLogger.child("channel-format")
 
@@ -17,13 +20,28 @@ export interface ToggleResult {
 	message?: string
 }
 
+interface ConfigurateInput {
+	name: string
+	channel: GuildChannel
+	pattern: string
+	flags: string
+	deleteMessage: boolean
+	notify: boolean
+}
+
+interface FormatCommandInput {
+	formatId: string
+	guildId: string
+	user: User
+}
+
 @Injectable(FormatRepository)
 export class FormatService {
 	constructor (
 		private readonly repository: FormatRepository
 	) {}
 
-	public async saveFormat (data: SaveFormatData): Promise<void> {
+	private async saveFormat (data: SaveFormatData): Promise<void> {
 		try {
 			new RegExp(data.pattern, data.flags)
 		} catch {
@@ -33,11 +51,11 @@ export class FormatService {
 		formatLogger.info(`Formato configurado en canal ${data.channelId} de guild ${data.guildId}`)
 	}
 
-	public async getFormats (guildId: string, includeDeleted: boolean): Promise<IChannelFormat[]> {
+	private async getFormats (guildId: string, includeDeleted: boolean): Promise<IChannelFormat[]> {
 		return this.repository.findByGuild(guildId, includeDeleted)
 	}
 
-	public async deleteFormat (
+	private async deleteFormat (
 		formatId: string,
 		guildId: string,
 		deletedBy: string
@@ -45,7 +63,7 @@ export class FormatService {
 		return this.repository.softDelete(formatId, guildId, deletedBy)
 	}
 
-	public async toggleFormatState (
+	private async toggleFormatState (
 		formatId: string,
 		guildId: string,
 		newState: boolean
@@ -84,7 +102,7 @@ export class FormatService {
 	}
 
 	// Métodos de construcción de embeds y menús
-	public buildConfigEmbed (config: {
+	private buildConfigEmbed (config: {
 		name: string
 		channel: { id: string; toString(): string }
 		pattern: string
@@ -106,7 +124,7 @@ export class FormatService {
 			.setTimestamp()
 	}
 
-	public buildListEmbed (formats: IChannelFormat[], verEliminados: boolean): EmbedBuilder {
+	private buildListEmbed (formats: IChannelFormat[], verEliminados: boolean): EmbedBuilder {
 		const titulo = verEliminados
 			? `🗑️ Formatos eliminados (${formats.length})`
 			: `📋 Formatos de canales (${formats.length})`
@@ -123,7 +141,7 @@ export class FormatService {
 		return embed
 	}
 
-	public buildSelectMenuOptions (
+	private buildSelectMenuOptions (
 		formats: IChannelFormat[],
 		verEliminados: boolean
 	): StringSelectMenuOptionBuilder[] {
@@ -155,7 +173,7 @@ export class FormatService {
 		})
 	}
 
-	public buildSelectMenuRow (
+	private buildSelectMenuRow (
 		formats: IChannelFormat[],
 		verEliminados: boolean
 	): ActionRowBuilder<StringSelectMenuBuilder> {
@@ -166,5 +184,125 @@ export class FormatService {
 			.addOptions(options)
 
 		return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)
+	}
+
+	// Funciones que van directamente a los comandos
+	async configurate (
+		{ channel,
+			name,
+			pattern,
+			flags,
+			deleteMessage,
+			notify,
+			guildId }: ConfigurateInput & { guildId: string }): Promise<CommandReply> {
+
+		try {
+			await this.saveFormat({
+				guildId,
+				channelId: channel.id,
+				name,
+				pattern,
+				flags,
+				deleteMessage,
+				notifyUser: notify
+			})
+
+			const embed = this.buildConfigEmbed({
+				name,
+				channel,
+				pattern,
+				flags,
+				deleteMessage,
+				notifyUser:
+					notify
+			})
+			return { embeds: [embed] }
+		} catch (error) {
+			const isValidationError = error instanceof Error && error.message.includes("expresión regular")
+			const content = isValidationError
+				? `❌ ${(error as Error).message}`
+				: "❌ Error al configurar el formato del canal."
+			if (!isValidationError) {
+				formatLogger.error("Error configurando formato:", error)
+			}
+			return { content }
+		}
+	}
+
+	async info (verEliminados: boolean, guildId: string): Promise<CommandReply> {
+		try {
+			const formats = await this.getFormats(guildId, verEliminados)
+
+			if (formats.length === 0) {
+				const mensaje = verEliminados
+					? "🗑️ No hay formatos eliminados en este servidor."
+					: "⚙️ No hay formatos configurados. Usa `/formato configurar` para empezar."
+				return { content: mensaje }
+			}
+
+			const embed = this.buildListEmbed(formats, verEliminados)
+			const row = this.buildSelectMenuRow(formats, verEliminados)
+
+			return { embeds: [embed], components: [row] }
+		} catch (error) {
+			formatLogger.error("Error obteniendo formatos:", error)
+			return { content: "❌ Error al obtener los formatos." }
+		}
+	}
+
+	async remove ({ formatId, guildId, user }: FormatCommandInput): Promise<CommandReply> {
+		try {
+			const format = await this.deleteFormat(formatId, guildId, user.id)
+
+			if (!format) {
+				return { content: `❌ No se encontró un formato activo con el ID \`${formatId}\`` }
+			}
+
+			formatLogger.info(
+				`Formato ${format.name} eliminado (${formatId}) ` +
+					`por ${user.tag} en guild ${guildId}`
+			)
+			return{ content: `✅ Formato \`${format.name}\` eliminado correctamente.` }
+
+		} catch (error) {
+			formatLogger.error("Error eliminando formato:", error)
+			return { content: "❌ Error al eliminar el formato." }
+		}
+	}
+
+	async toggleState ({
+		formatId,
+		guildId,
+		user,
+		newState
+	}: FormatCommandInput & { newState: boolean }): Promise<CommandReply> {
+		const result = await this.toggleFormatState(formatId, guildId, newState)
+
+		if (!result.success || !result.format) {
+			return { content: result.message ?? "❌ Error desconocido" }
+		}
+
+		const embed = new EmbedBuilder()
+			.addFields(
+				{ name: "Nombre", value: result.format.name, inline: true },
+				{ name: "Canal", value: `<#${result.format.channelId}>`, inline: true },
+				{ name: "ID", value: formatId, inline: true }
+			)
+
+		if (result.format.isActive === false) {
+			embed
+				.setColor(0xffa500)
+				.setTitle("⏸️ Formato pausado")
+				.setDescription("Puedes reactivarlo cuando quieras usando `/formato reanudar`")
+				.setFooter({ text: `Pausado por ${user.tag}` })
+		} else {
+			embed
+				.setColor(0x00ff00)
+				.setTitle("▶️ Formato reanudado")
+				.setDescription("El formato está activo nuevamente.")
+				.setFooter({ text: `Reanudado por ${user.tag}` })
+		}
+
+		return { embeds: [embed] }
 	}
 }
