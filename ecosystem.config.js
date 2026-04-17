@@ -7,6 +7,7 @@ module.exports = {
 			env: {
 				NODE_ENV: "production"
 			},
+			log_rotate: true,
 			error_file: "../../logs/bot-error.log",
 			out_file: "../../logs/bot-out.log",
 			log_date_format: "YYYY-MM-DD HH:mm:ss Z",
@@ -15,12 +16,13 @@ module.exports = {
 			max_memory_restart: "500M"
 		},
 		{
-			name: "dashboard-server",
-			cwd: "./apps/dashboard/server",
-			script: "dist/main.js",
+			name: "dashboard",
+			cwd: "./apps/dashboard",
+			script: ".output/server/index.mjs",
 			env: {
 				NODE_ENV: "production"
 			},
+			log_rotate: true,
 			error_file: "../../logs/dashboard-error.log",
 			out_file: "../../logs/dashboard-out.log",
 			log_date_format: "YYYY-MM-DD HH:mm:ss Z",

@@ -20,6 +20,9 @@
   "references": [
     {
       "path": "../config/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/logger/tsconfig.lib.json"
     }
   ]
 }

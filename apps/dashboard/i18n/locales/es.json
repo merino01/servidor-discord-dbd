@@ -1,0 +1,13 @@
+{
+	"errorCreandoClan": "Error al crear el clan",
+	"bot": {},
+	"dashboard": {
+		"selectGuild": "Selecciona un servidor",
+		"maxMembers": "Máximo de miembros",
+		"maxVoiceChannels": "Máximo de canales de voz",
+		"roleColor": "Color del rol",
+		"errorLoadingClans": "Error al cargar los clanes",
+		"clanName": "Nombre del clan",
+		"createdDate": "Fecha de creación"
+	}
+}

@@ -4,22 +4,16 @@
 	"license": "MIT",
 	"scripts": {
 		"dev:all": "nx run-many -t serve --parallel",
-		"dev:client": "nx serve @org/client",
-		"dev:server": "nx serve @org/server",
 		"dev:bot": "nx serve @org/bot",
-		"dev:dashboard": "nx run-many -t serve --projects=client,server",
+		"dev:dashboard": "nx serve dashboard",
 		"build:all": "nx run-many -t build",
-		"build:client": "nx build @org/client",
-		"build:server": "nx build @org/server",
-		"build:bot": "nx build @org/bot",
+		"build:bot": "nx build bot",
+		"build:dashboard": "nx build dashboard",
 		"lint:all": "nx run-many -t lint",
-		"lint:client": "nx lint @org/client",
-		"lint:server": "nx lint @org/server",
-		"lint:bot": "nx lint @org/bot",
+		"lint:dashboard": "nx lint dashboard",
+		"lint:bot": "nx lint bot",
 		"lint:affected": "nx affected -t lint",
 		"test:all": "nx run-many -t test",
-		"test:client": "nx test @org/client",
-		"test:server": "nx test @org/server",
 		"test:bot": "nx test @org/bot"
 	},
 	"private": true,
@@ -30,13 +24,11 @@
 		"@nx/eslint": "22.3.3",
 		"@nx/eslint-plugin": "22.3.3",
 		"@nx/jest": "22.3.3",
-		"@nx/js": "22.3.3",
 		"@nx/node": "^22.3.3",
+		"@nx/nuxt": "^22.3.3",
 		"@nx/playwright": "22.3.3",
 		"@nx/vite": "22.3.3",
 		"@nx/vitest": "22.3.3",
-		"@nx/vue": "^22.3.3",
-		"@nx/web": "22.3.3",
 		"@playwright/test": "^1.36.0",
 		"@swc-node/register": "~1.9.1",
 		"@swc/core": "~1.5.7",
@@ -76,18 +68,13 @@
 	},
 	"workspaces": [
 		"packages/*",
-		"apps/dashboard/client",
 		"apps/*",
-		"apps/dashboard/server",
-		"apps/dashboard/server-e2e",
 		"libs/*"
 	],
 	"dependencies": {
 		"axios": "^1.6.0",
 		"express": "^4.21.2",
 		"ioredis": "^5.9.3",
-		"mongoose": "^9.1.2",
-		"vue": "^3.5.13",
-		"vue-router": "^4.5.0"
+		"mongoose": "^9.1.2"
 	}
 }

@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@utility grid-cols-sm {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+@utility grid-cols-md {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+@utility grid-cols-lg {
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+}
+
+* {
+	/* cursor: url("/cursor.png"), auto; */
+}

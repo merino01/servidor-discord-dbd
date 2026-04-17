@@ -37,6 +37,7 @@
 		}
 	},
 	"dependencies": {
-		"redis": "^5.10.0"
+		"redis": "^5.10.0",
+		"@org/logger": "0.0.1"
 	}
 }

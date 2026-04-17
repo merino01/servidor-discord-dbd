@@ -5,6 +5,13 @@ dist
 tmp
 out-tsc
 
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+
 # dependencies
 node_modules
 
@@ -50,3 +57,5 @@ vitest.config.*.timestamp*
 test-output
 
 config.json
+
+.env

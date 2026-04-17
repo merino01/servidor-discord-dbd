@@ -2,8 +2,6 @@ import { readFileSync, existsSync } from "node:fs"
 import { join, resolve, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-
 export interface DiscordConfig {
 	token: string
 	guildId: string
@@ -55,16 +53,41 @@ export interface AppConfig {
 
 let cachedConfig: AppConfig | null = null
 
+function getModuleDirectory (): string | null {
+	try {
+		return dirname(fileURLToPath(import.meta.url))
+	} catch {
+		return null
+	}
+}
+
+function getConfigCandidates (): string[] {
+	const candidates = new Set<string>()
+	const cwd = process.cwd()
+
+	if (process.env.ORG_CONFIG_PATH) {
+		candidates.add(resolve(process.env.ORG_CONFIG_PATH))
+	}
+
+	candidates.add(resolve(join(cwd, "config.json")))
+	candidates.add(resolve(join(cwd, "..", "config.json")))
+	candidates.add(resolve(join(cwd, "..", "..", "config.json")))
+
+	const moduleDirectory = getModuleDirectory()
+	if (moduleDirectory) {
+		candidates.add(resolve(join(moduleDirectory, "..", "..", "..", "..", "config.json")))
+		candidates.add(resolve(join(moduleDirectory, "..", "..", "..", "config.json")))
+	}
+
+	return [...candidates]
+}
+
 export function loadConfig (): AppConfig {
 	if (cachedConfig) {
 		return cachedConfig
 	}
 
-	// Buscar config.json en dos ubicaciones posibles
-	const possiblePaths = [
-		resolve(join(__dirname, "..", "..", "..", "..", "config.json")),
-		resolve(join(__dirname, "..", "..", "..", "config.json"))
-	]
+	const possiblePaths = getConfigCandidates()
 
 	let configPath: string | null = null
 	for (const path of possiblePaths) {
@@ -75,7 +98,7 @@ export function loadConfig (): AppConfig {
 	}
 
 	if (!configPath) {
-		throw new Error("No se encontró config.json en las rutas esperadas")
+		throw new Error(`No se encontró config.json en las rutas esperadas: ${possiblePaths.join(", ")}`)
 	}
 
 	const configContent = readFileSync(configPath, "utf-8")
