@@ -1,6 +1,6 @@
 import { registerSubCommand } from "@/core/command-register"
 import { ClanCommand } from "./clan.command"
-import { OptionType } from "@/core/types"
+import { ApplicationCommandOptionType } from "discord.js"
 
 registerSubCommand(ClanCommand, "salir", {
 	name: "salir",
@@ -14,7 +14,7 @@ registerSubCommand(ClanCommand, "invitar", {
 		{
 			name: "usuario",
 			description: "Usuario a invitar al clan",
-			type: OptionType.USER,
+			type: ApplicationCommandOptionType.User,
 			required: true
 		}
 	]
@@ -27,7 +27,7 @@ registerSubCommand(ClanCommand, "expulsar", {
 		{
 			name: "usuario",
 			description: "Usuario a expulsar del clan",
-			type: OptionType.USER,
+			type: ApplicationCommandOptionType.User,
 			required: true
 		}
 	]

@@ -1,6 +1,6 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
+import { CommandContext } from "@types"
 import {
 	PermissionFlagsBits,
 	EmbedBuilder,
@@ -11,7 +11,8 @@ import {
 	StringSelectMenuOptionBuilder,
 	GuildBasedChannel,
 	APIInteractionDataResolvedChannel,
-	ChatInputCommandInteraction
+	ChatInputCommandInteraction,
+	ApplicationCommandOptionType
 } from "discord.js"
 import { AutoMessageModel, AutoMessageTargetType, IAutoMessage } from "@org/mongo"
 import { botLogger } from "@/core/logger"
@@ -68,15 +69,6 @@ export class AutoMessageCommand extends BaseCommand {
 		return null
 	}
 
-	private validateCategoryType (
-		category: GuildBasedChannel | APIInteractionDataResolvedChannel | null
-	): string | null {
-		if (category && category.type !== ChannelType.GuildCategory) {
-			return "❌ El canal especificado no es una categoría."
-		}
-		return null
-	}
-
 	private validateMessage (
 		message: string | null,
 		embed: string | null
@@ -99,9 +91,6 @@ export class AutoMessageCommand extends BaseCommand {
 
 		const cronRequirementsError = this.validateCronRequirements(channel, category, cronExpression)
 		if (cronRequirementsError) { return cronRequirementsError }
-
-		const categoryTypeError = this.validateCategoryType(category)
-		if (categoryTypeError) { return categoryTypeError }
 
 		const messageError = this.validateMessage(message, messageEmbed)
 		if (messageError) { return messageError }
@@ -630,7 +619,7 @@ export class AutoMessageCommand extends BaseCommand {
 registerCommand(AutoMessageCommand, {
 	name: "automensaje",
 	description: "Gestiona los mensajes automáticos del servidor",
-	permissions: PermissionFlagsBits.ManageChannels & PermissionFlagsBits.ManageMessages,
+	permissions: PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageMessages,
 	guildOnly: true
 })
 
@@ -641,49 +630,51 @@ registerSubCommand(AutoMessageCommand, "crear", {
 		{
 			name: "nombre",
 			description: "Nombre identificador del mensaje automático",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		},
 		{
 			name: "mensaje",
 			description: "El mensaje que se enviará",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "embed",
 			description: "El embed en formato JSON que se enviará",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "cron",
 			description: "Expresión cron (solo para canales, ej: '0 0 9 * * *' = 9:00 AM)",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "canal",
 			description: "Canal donde enviar el mensaje",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes:[ChannelType.GuildAnnouncement, ChannelType.GuildText],
 			required: false
 		},
 		{
 			name: "categoria",
 			description: "Categoría donde enviar el mensaje (a todos los canales de texto)",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes:[ChannelType.GuildCategory],
 			required: false
 		},
 		{
 			name: "tiempo",
 			description: "Tiempo de espera para enviar un mensaje tras la creación de un canal (en segundos)",
-			type: OptionType.INTEGER,
+			type: ApplicationCommandOptionType.Integer,
 			required: false
 		},
 		{
 			name: "anclar",
 			description: "Anclar los mensajes automaticos que se envian al crear un canal",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		}
 	]
@@ -696,7 +687,7 @@ registerSubCommand(AutoMessageCommand, "eliminar", {
 		{
 			name: "id",
 			description: "ID del mensaje automático a eliminar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		}
 	]
@@ -709,13 +700,13 @@ registerSubCommand(AutoMessageCommand, "info", {
 		{
 			name: "id",
 			description: "ID del mensaje automático (opcional, sin ID muestra lista)",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: false
 		},
 		{
 			name: "ver-eliminados",
 			description: "Mostrar mensajes automáticos eliminados (solo si no se proporciona ID)",
-			type: OptionType.BOOLEAN,
+			type: ApplicationCommandOptionType.Boolean,
 			required: false
 		}
 	]
@@ -728,7 +719,7 @@ registerSubCommand(AutoMessageCommand, "pausar", {
 		{
 			name: "id",
 			description: "ID del mensaje automático a pausar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		}
 	]
@@ -741,7 +732,7 @@ registerSubCommand(AutoMessageCommand, "reanudar", {
 		{
 			name: "id",
 			description: "ID del mensaje automático a reanudar",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		}
 	]

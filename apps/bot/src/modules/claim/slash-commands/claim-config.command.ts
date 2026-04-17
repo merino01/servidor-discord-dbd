@@ -1,9 +1,16 @@
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { botLogger } from "@/core/logger"
-import { CommandContext, OptionType } from "@/core/types"
+import { CommandContext } from "@/core/types"
 import { ClaimConfigModel } from "@org/mongo"
-import { ChannelType, EmbedBuilder, GuildChannel, MessageFlags, PermissionFlagsBits } from "discord.js"
+import {
+	ChannelType,
+	EmbedBuilder,
+	GuildChannel,
+	MessageFlags,
+	PermissionFlagsBits,
+	ApplicationCommandOptionType
+} from "discord.js"
 
 const claimLogger = botLogger.child("claim-config")
 
@@ -21,21 +28,8 @@ export class ClaimConfigCommand extends BaseCommand {
 		return embed
 	}
 
-	private isValidCategory (category : ChannelType): boolean {
-		return category === ChannelType.GuildCategory
-	}
-
 	public async añadirCategoria ({ interaction }: CommandContext) {
 		const category = interaction.options.getChannel("categoria", true) as GuildChannel
-		const valid = this.isValidCategory(category.type)
-
-		if (!valid) {
-			await interaction.reply({
-				content: "La categoría seleccionada no es válida.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
 
 		await interaction.deferReply()
 
@@ -87,14 +81,6 @@ export class ClaimConfigCommand extends BaseCommand {
 
 	public async eliminarCategoria ( { interaction }: CommandContext) {
 		const category = interaction.options.getChannel("categoria", true)
-		const valid = this.isValidCategory(category.type)
-		if (!valid) {
-			await interaction.reply({
-				content: "Selecciona una categoría valida.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
 
 		await interaction.deferReply()
 
@@ -131,7 +117,8 @@ registerSubCommand(ClaimConfigCommand, "añadirCategoria", {
 		{
 			name: "categoria",
 			description: "Categoria donde funcionará el comando",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ ChannelType.GuildCategory],
 			required: true
 		}
 	]
@@ -149,7 +136,8 @@ registerSubCommand(ClaimConfigCommand, "eliminarCategoria", {
 		{
 			name: "categoria",
 			description: "Categoria donde dejará funcionará el comando",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes: [ChannelType.GuildCategory],
 			required: true
 		}
 	]

@@ -85,6 +85,7 @@ export abstract class BaseCommand implements ICommand {
 			sub.addChannelOption((opt: any) => opt.setName(option.name)
 				.setDescription(option.description)
 				.setRequired(option.required ?? false)
+				.addChannelTypes(option.channelTypes ?? [])
 			)
 			break
 		case 8: // ROLE
@@ -148,6 +149,7 @@ export abstract class BaseCommand implements ICommand {
 			this.data.addChannelOption((opt) => opt.setName(option.name)
 				.setDescription(option.description)
 				.setRequired(option.required ?? false)
+				.addChannelTypes(option.channelTypes ?? [])
 			)
 			break
 		case 8: // ROLE

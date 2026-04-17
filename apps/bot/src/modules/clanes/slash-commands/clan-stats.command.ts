@@ -3,11 +3,12 @@ import {
 	EmbedBuilder,
 	ActionRowBuilder,
 	ButtonBuilder,
-	ButtonStyle
+	ButtonStyle,
+	ApplicationCommandOptionType
 } from "discord.js"
 import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
+import { CommandContext } from "@types"
 import { ClanModel, IClanStats } from "@org/mongo"
 import { clanStatsService } from "../services/clan-stats.service"
 
@@ -262,7 +263,7 @@ registerSubCommand(ClanStatsCommand, "clanStats", {
 		{
 			name: "rol",
 			description: "Rol del clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		}
 	]

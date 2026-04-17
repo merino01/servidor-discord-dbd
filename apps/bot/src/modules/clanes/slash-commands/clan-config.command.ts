@@ -1,6 +1,6 @@
 import { registerCommand, registerSubCommand } from "@/core/command-register"
-import { CommandContext, OptionType } from "@types"
-import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ChannelType } from "discord.js"
+import { CommandContext } from "@types"
+import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ChannelType, ApplicationCommandOptionType } from "discord.js"
 import { botLogger } from "@/core/logger"
 import { ClanConfigModel, IClanConfig, ClanModel } from "@org/mongo"
 import { BaseCommand } from "@/core/base/base-command"
@@ -49,12 +49,6 @@ export class ClanConfigCommand extends BaseCommand {
 		maxCanalesExtra: number
 		expiracionHoras: number
 	}): string | null {
-		const isValidCategory = params.categoriaVozType === ChannelType.GuildCategory &&
-			params.categoriaTextoType === ChannelType.GuildCategory
-
-		if (!isValidCategory) {
-			return "El canal especificado debe ser una categoría."
-		}
 
 		if (params.maxMiembros < 1 || params.maxMiembros > 100) {
 			return "El máximo de miembros debe estar entre 1 y 100."
@@ -636,43 +630,45 @@ registerSubCommand(ClanConfigCommand, "configurar", {
 		{
 			name: "categoria-voz",
 			description: "Categoría donde se crearán los canales de voz de los clanes",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes:[ChannelType.GuildCategory],
 			required: true
 		},
 		{
 			name: "categoria-texto",
 			description: "Categoría donde se crearán los canales de texto de los clanes",
-			type: OptionType.CHANNEL,
+			type: ApplicationCommandOptionType.Channel,
+			channelTypes:[ChannelType.GuildCategory],
 			required: true
 		},
 		{
 			name: "rol-lider",
 			description: "Rol que se asignará a los líderes de clan",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		},
 		{
 			name: "max-miembros",
 			description: "Máximo de miembros por clan (1-100, por defecto 50)",
-			type: OptionType.INTEGER,
+			type: ApplicationCommandOptionType.Integer,
 			required: false
 		},
 		{
 			name: "max-canales-extra",
 			description: "Máximo de canales de voz extra (0-10, por defecto 3)",
-			type: OptionType.INTEGER,
+			type: ApplicationCommandOptionType.Integer,
 			required: false
 		},
 		{
 			name: "expiracion-invitacion",
 			description: "Horas para que expire una invitación (1-168, por defecto 24)",
-			type: OptionType.INTEGER,
+			type: ApplicationCommandOptionType.Integer,
 			required: false
 		},
 		{
 			name: "color",
 			description: "Color en formato hexadecimal (ej: #FF5733)",
-			type: OptionType.STRING
+			type: ApplicationCommandOptionType.String
 		}
 	]
 })
@@ -706,7 +702,7 @@ registerSubCommand(ClanConfigCommand, "agregarRol", {
 		{
 			name: "rol",
 			description: "Rol a agregar (ej: separadores, roles organizativos)",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		}
 	]
@@ -719,7 +715,7 @@ registerSubCommand(ClanConfigCommand, "quitarRol", {
 		{
 			name: "rol",
 			description: "Rol a quitar",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		}
 	]
@@ -732,13 +728,13 @@ registerSubCommand(ClanConfigCommand, "editarMaxMiembros", {
 		{
 			name: "clan",
 			description: "Rol del clan a configurar",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		},
 		{
 			name: "limite",
 			description: "Nuevo límite de miembros (1-100)",
-			type: OptionType.INTEGER,
+			type: ApplicationCommandOptionType.Integer,
 			required: true
 		}
 	]
@@ -751,13 +747,13 @@ registerSubCommand(ClanConfigCommand, "editarMaxCanalesVoz", {
 		{
 			name: "clan",
 			description: "Rol del clan a configurar",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		},
 		{
 			name: "limite",
 			description: "Nuevo límite de canales de voz (1-10)",
-			type: OptionType.INTEGER,
+			type: ApplicationCommandOptionType.Integer,
 			required: true
 		}
 	]
@@ -770,13 +766,13 @@ registerSubCommand(ClanConfigCommand, "editarColorRol", {
 		{
 			name: "clan",
 			description: "Rol del clan a configurar",
-			type: OptionType.ROLE,
+			type: ApplicationCommandOptionType.Role,
 			required: true
 		},
 		{
 			name: "color",
 			description: "Color en formato hexadecimal (ej: #FF5733)",
-			type: OptionType.STRING,
+			type: ApplicationCommandOptionType.String,
 			required: true
 		}
 	]
