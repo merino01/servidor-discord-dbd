@@ -10,7 +10,7 @@ import { BaseCommand } from "@/core/base/base-command"
 import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext } from "@types"
 import { ClanModel, IClanStats } from "@org/mongo"
-import { clanStatsService } from "../services/clan-stats.service"
+import { clanStatsService } from "../repositories/clan-stats.repository"
 
 interface PopulatedClanStats extends Omit<IClanStats, "clanId"> {
 	clanId: {

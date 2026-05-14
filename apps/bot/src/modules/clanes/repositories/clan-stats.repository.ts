@@ -1,7 +1,7 @@
 import { ClanStatsModel, IClanStats, ClanModel } from "@org/mongo"
 import { Types } from "mongoose"
 
-export class ClanStatsService {
+export class ClanStatsRepository {
 	/**
 	 * Obtiene o crea las estadísticas de los últimos 30 días de un clan
 	 */
@@ -223,4 +223,4 @@ export class ClanStatsService {
 	}
 }
 
-export const clanStatsService = new ClanStatsService()
+export const clanStatsRepository = new ClanStatsRepository()

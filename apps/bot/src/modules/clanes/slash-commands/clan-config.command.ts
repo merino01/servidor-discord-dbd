@@ -4,7 +4,7 @@ import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ChannelType, Applicati
 import { botLogger } from "@/core/logger"
 import { ClanConfigModel, IClanConfig, ClanModel } from "@org/mongo"
 import { BaseCommand } from "@/core/base/base-command"
-import { ClanService } from "../services/clan.service"
+import { ClanService } from "../repositories/clan.repository"
 
 const clanLogger = botLogger.child("clanes-config")
 

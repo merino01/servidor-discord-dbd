@@ -1,6 +1,6 @@
 import { ButtonInteraction, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from "discord.js"
 import { registerButton } from "@/core/components/component-registry"
-import { ClanService } from "../services/clan.service"
+import { ClanService } from "../repositories/clan.repository"
 
 const clanService = ClanService.getInstance()
 

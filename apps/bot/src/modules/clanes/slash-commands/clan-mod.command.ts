@@ -17,7 +17,7 @@ import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext } from "@types"
 import { BaseCommand } from "@/core/base/base-command"
 import { ClanModel, IClan } from "@org/mongo"
-import { ClanService } from "../services/clan.service"
+import { ClanService } from "../repositories/clan.repository"
 import { botLogger } from "@/core/logger"
 
 const clanLogger = botLogger.child("clanes")

@@ -1,7 +1,7 @@
 import { Events, Message } from "discord.js"
 import { registerEvent } from "@/core/event-registry"
 import { ClanModel } from "@org/mongo"
-import { clanStatsService } from "../services/clan-stats.service"
+import { clanStatsService } from "../repositories/clan-stats.repository"
 
 /**
  * Listener para registrar mensajes en canales de clanes

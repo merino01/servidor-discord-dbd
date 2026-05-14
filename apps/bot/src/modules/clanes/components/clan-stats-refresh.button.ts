@@ -1,7 +1,7 @@
 import { ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js"
 import { registerButton } from "@/core/components/component-registry"
 import { ClanModel, IClanStats } from "@org/mongo"
-import { clanStatsService } from "../services/clan-stats.service"
+import { clanStatsService } from "../repositories/clan-stats.repository"
 
 function addGeneralStatsField (embed: EmbedBuilder, stats: IClanStats): void {
 	const hours = Math.floor(stats.totalVoiceMinutes / 60)

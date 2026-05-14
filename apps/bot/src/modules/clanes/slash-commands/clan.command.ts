@@ -11,14 +11,15 @@ import {
 	Message,
 	ButtonInteraction
 } from "discord.js"
-import { ClanService } from "../services/clan.service"
+import { ClanService } from "../repositories/clan.repository"
 import { CommandContext } from "@/core/types"
 import { IClan, IClanInvitation } from "@org/mongo"
 import { botLogger } from "@/core/logger"
+import { SlashCommand, Subcommand } from "@/core/decorators/command.decorators"
 
 const clanLogger = botLogger.child("clanes")
 
-export class ClanCommand extends BaseCommand {
+export class ClanCommands extends BaseCommand {
 	protected service = ClanService.getInstance()
 	private buildSuccessEmbed (title: string, description: string): EmbedBuilder {
 		return new EmbedBuilder()
@@ -467,7 +468,11 @@ export class ClanCommand extends BaseCommand {
 	}
 }
 
-registerCommand(ClanCommand, {
+@SlashCommand({
 	name: "clan",
 	description: "Gestión de clanes"
 })
+export class ClanCommand {
+
+}
+

@@ -1,5 +1,5 @@
 import { BotInstance } from "@/core/bot-instance"
-import { ClanService } from "../services/clan.service"
+import { ClanService } from "../repositories/clan.repository"
 import { getConfig } from "@/core/config"
 import { scheduleCronJob } from "@/core/schedule-cron-job"
 import { Collection, GuildMember, Role } from "discord.js"

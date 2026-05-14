@@ -1,6 +1,6 @@
 import { registerEvent } from "@/core/event-registry"
 import { Events } from "discord.js"
-import { ClanService } from "../services/clan.service"
+import { ClanService } from "../repositories/clan.repository"
 
 const handleMemberLeave = async ({ userId, guildId }: { userId: string, guildId: string }) => {
 	const service = ClanService.getInstance()

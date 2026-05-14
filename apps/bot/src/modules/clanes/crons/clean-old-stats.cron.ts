@@ -1,5 +1,5 @@
 import { scheduleCronJob } from "@/core/schedule-cron-job"
-import { clanStatsService } from "../services/clan-stats.service"
+import { clanStatsService } from "../repositories/clan-stats.repository"
 
 const cleanOldStats = async () => {
 	try {

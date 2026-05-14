@@ -1,7 +1,7 @@
 import { Events, VoiceState } from "discord.js"
 import { registerEvent } from "@/core/event-registry"
 import { ClanModel } from "@org/mongo"
-import { clanStatsService } from "../services/clan-stats.service"
+import { clanStatsService } from "../repositories/clan-stats.repository"
 
 interface VoiceSession {
 	userId: string
