@@ -1,5 +1,5 @@
 import { BotInstance } from "@/core/bot-instance"
-import { ClanService } from "../repositories/clan.repository"
+import { ClanRepository } from "../repositories/clan.repository"
 import { getConfig } from "@/core/config"
 import { scheduleCronJob } from "@/core/schedule-cron-job"
 import { Collection, GuildMember, Role } from "discord.js"
@@ -17,7 +17,7 @@ async function ajustMemberRolesCron () {
 		return
 	}
 
-	const clanService = ClanService.getInstance()
+	const clanService = ClanRepository.getInstance()
 	const members = await guild.members.fetch()
 	const clanRoles = await clanService.getAllClanRoles(guild.id)
 	const clanConfig = await clanService.getConfig(guild.id)
@@ -41,7 +41,7 @@ async function ajustRolesFromMember ({
 	userRoles
 }: {
 	member: GuildMember,
-	clanService: ClanService,
+	clanService: ClanRepository,
 	clanRoles: string[],
 	additionalRoles: string[],
 	dbClan: IClan | null,

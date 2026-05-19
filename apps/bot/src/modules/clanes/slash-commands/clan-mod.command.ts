@@ -1,820 +1,298 @@
-import {
-	ActionRowBuilder,
-	EmbedBuilder,
-	Guild,
-	MessageFlags,
-	PermissionFlagsBits,
-	StringSelectMenuBuilder,
-	StringSelectMenuOptionBuilder,
-	ComponentType,
-	ButtonBuilder,
-	ButtonStyle,
-	Message,
-	ButtonInteraction,
-	ApplicationCommandOptionType
-} from "discord.js"
-import { registerCommand, registerSubCommand } from "@/core/command-register"
+import { Injectable } from "@/core/container"
+import { SlashCommand, Subcommand } from "@/core/decorators/command.decorators"
 import { CommandContext } from "@types"
-import { BaseCommand } from "@/core/base/base-command"
-import { ClanModel, IClan } from "@org/mongo"
-import { ClanService } from "../repositories/clan.repository"
-import { botLogger } from "@/core/logger"
-
-const clanLogger = botLogger.child("clanes")
-
-export class ClanModCommand extends BaseCommand {
-	protected service = ClanService.getInstance()
-	private buildSuccessEmbed (title: string, description: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0x00ff00)
-			.setTitle(`✅ ${title}`)
-			.setDescription(description)
-			.setTimestamp()
-	}
-
-	private buildErrorEmbed (error: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0xff0000)
-			.setTitle("❌ Error")
-			.setDescription(error)
-			.setTimestamp()
-	}
-
-	private validateClanName (nombre: string): string | null {
-		if (nombre.length < 2 || nombre.length > 32) {
-			return "El nombre del clan debe tener entre 2 y 32 caracteres."
-		}
-		return null
-	}
-
-	private validateClanIcon (icono: string): string | null {
-		const emojiRegex = /\p{Emoji}/u
-		const isEmoji = emojiRegex.test(icono)
-
-		if (!isEmoji && icono.length > 4) {
-			return "El icono del clan debe ser un emoji o tener máximo 4 caracteres."
-		}
-
-		if (icono.length === 0) {
-			return "Debes proporcionar un icono para el clan."
-		}
-
-		return null
-	}
-
-	async crear (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-		const nombre = interaction.options.getString("nombre", true)
-		const icono = interaction.options.getString("icono", true)
-		const lider = interaction.options.getUser("lider", true)
-
-		const nameError = this.validateClanName(nombre)
-		if (nameError) {
-			await interaction.editReply({ embeds: [this.buildErrorEmbed(nameError)] })
-			return
-		}
-
-		const iconError = this.validateClanIcon(icono)
-		if (iconError) {
-			await interaction.editReply({ embeds: [this.buildErrorEmbed(iconError)] })
-			return
-		}
-
-		const result = await this.service.createClan({
-			guildId: interaction.guild.id,
-			name: nombre,
-			icon: icono,
-			leaderId: lider.id,
-			createdBy: interaction.user.id
-		})
-
-		if (!result.success || !result.clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido al crear el clan.")]
-			})
-			return
-		}
-
-		const embed = this.buildSuccessEmbed(
-			"Clan creado",
-			`Se ha creado el clan **${icono} ${nombre}**\n\n` +
-			`**Líder:** <@${lider.id}>\n` +
-			`**Canal de texto:** <#${result.clan.textChannelIds[0]}>\n` +
-			`**Canal de voz:** <#${result.clan.voiceChannelIds[0]}>`
-		)
-
-		await interaction.editReply({ embeds: [embed] })
-	}
-
-	async eliminar (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-		const rol = interaction.options.getRole("rol", true)
-
-		const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
-
-		if (!clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(`No se encontró ningún clan asociado al rol ${rol.name}.`)]
-			})
-			return
-		}
-
-		const result = await this.service.deleteClan(clan._id.toString(), interaction.user.id)
-
-		if (!result.success) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido al eliminar el clan.")]
-			})
-			return
-		}
-
-		const embed = this.buildSuccessEmbed(
-			"Clan eliminado",
-			`El clan **${clan.icon} ${clan.name}** ha sido eliminado correctamente.\n\n` +
-			"Se han eliminado todos sus canales y roles asociados."
-		)
-
-		await interaction.editReply({ embeds: [embed] })
-	}
-
-	async añadirLider (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-		const rol = interaction.options.getRole("rol", true)
-		const usuario = interaction.options.getUser("usuario", true)
-
-		const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
-		if (!clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
-			})
-			return
-		}
-
-		const result = await this.service.addLeader(clan._id.toString(), usuario.id, interaction.user.id)
-
-		if (result.success) {
-			const embed = this.buildSuccessEmbed(
-				"Líder añadido",
-				`${usuario.tag} ahora es líder del clan **${clan.name}**.`
-			)
-			await interaction.editReply({ embeds: [embed] })
-		} else {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
-			})
-		}
-	}
-
-	async eliminarLider (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-		const rol = interaction.options.getRole("rol", true)
-		const usuario = interaction.options.getUser("usuario", true)
-
-		const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
-		if (!clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
-			})
-			return
-		}
-
-		const result = await this.service.removeLeader(
-			clan._id.toString(),
-			usuario.id,
-			interaction.user.id
-		)
-
-		if (result.success) {
-			const embed = this.buildSuccessEmbed(
-				"Líder removido",
-				`${usuario.tag} ya no es líder del clan **${clan.name}**.`
-			)
-			await interaction.editReply({ embeds: [embed] })
-		} else {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
-			})
-		}
-	}
-
-	async añadirMiembro (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-		const rol = interaction.options.getRole("rol", true)
-		const usuario = interaction.options.getUser("usuario", true)
-
-		const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
-		if (!clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
-			})
-			return
-		}
-
-		const result = await this.service.addMember(clan._id.toString(), usuario.id, interaction.user.id)
-
-		if (result.success) {
-			const embed = this.buildSuccessEmbed(
-				"Miembro añadido",
-				`${usuario.tag} se ha unido al clan **${clan.name}**.`
-			)
-			await interaction.editReply({ embeds: [embed] })
-		} else {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
-			})
-		}
-	}
-
-	async expulsar (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-		const rol = interaction.options.getRole("rol", true)
-		const usuario = interaction.options.getUser("usuario", true)
-
-		const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
-		if (!clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
-			})
-			return
-		}
-
-		const result = await this.service.removeMember(
-			clan._id.toString(),
-			usuario.id,
-			interaction.user.id,
-			true
-		)
-
-		if (result.success) {
-			const embed = this.buildSuccessEmbed(
-				"Miembro expulsado",
-				`${usuario.tag} ha sido expulsado del clan **${clan.name}**.`
-			)
-			await interaction.editReply({ embeds: [embed] })
-		} else {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
-			})
-		}
-	}
-
-	async añadirCanal (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-		const rol = interaction.options.getRole("rol", true)
-
-		const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
-		if (!clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
-			})
-			return
-		}
-
-		const result = await this.service.addExtraVoiceChannel(
-			clan._id.toString(),
-			interaction.user.id
-		)
-
-		if (result.success && result.channelId) {
-			const channelNumber = clan.voiceChannelIds.length + 1
-			const embed = this.buildSuccessEmbed(
-				"Canal añadido",
-				`Canal de voz **${clan.icon} ${clan.name} #${channelNumber}** creado exitosamente.`
-			)
-			await interaction.editReply({ embeds: [embed] })
-		} else {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
-			})
-		}
-	}
-
-	async eliminarCanal (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-		const rol = interaction.options.getRole("rol", true)
-
-		const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
-		if (!clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
-			})
-			return
-		}
-
-		const result = await this.service.removeLastExtraVoiceChannel(
-			clan._id.toString(),
-			interaction.user.id
-		)
-
-		if (result.success) {
-			const embed = this.buildSuccessEmbed(
-				"Canal eliminado",
-				`El canal ha sido eliminado del clan **${clan.name}**.`
-			)
-			await interaction.editReply({ embeds: [embed] })
-		} else {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido")]
-			})
-		}
-	}
-
-	async info (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guildId) {
-			await interaction.reply({
-				content: "❌ Este comando solo funciona en servidores.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		const verEliminados = interaction.options.getBoolean("ver-eliminados") ?? false
-
-		try {
-			const clans = await ClanModel.find({
-				guildId: interaction.guildId,
-				isActive: !verEliminados
-			}).sort({ createdAt: -1 })
-
-			if (clans.length === 0) {
-				const mensaje = verEliminados
-					? "🗁️ No hay clanes eliminados en este servidor."
-					: "📋 No hay clanes configurados en este servidor."
-				await interaction.reply({ content: mensaje, flags: MessageFlags.Ephemeral })
-				return
-			}
-
-			const embed = this.buildListEmbed(clans, verEliminados)
-			const row = this.buildSelectMenuRow(clans)
-
-			await interaction.reply({
-				embeds: [embed],
-				components: [row],
-				flags: MessageFlags.Ephemeral
-			})
-		} catch (error) {
-			clanLogger.error("Error al listar clanes:", error)
-			await interaction.reply({
-				content: "❌ Error al listar los clanes.",
-				flags: MessageFlags.Ephemeral
-			})
-		}
-	}
-
-	private async processMembersPagination (params: {
-		interaction: CommandContext["interaction"]
-		guild: Guild
-		clan: IClan
-	}): Promise<void> {
-		const { interaction, guild, clan } = params
-		const memberList = await this.buildMemberList(clan.members, clan.leaderIds, guild)
-
-		const chunks = this.chunkArray(memberList, 20)
-
-		if (chunks.length === 0) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed("El clan no tiene miembros.")]
-			})
-			return
-		}
-
-		const embed = this.buildModMemberEmbed(clan, chunks, 0)
-		const buttons = this.buildModPaginationButtons(0, chunks.length)
-
-		const response = await interaction.editReply({
-			embeds: [embed],
-			components: chunks.length > 1 ? [buttons] : []
-		})
-
-		if (chunks.length === 1) {
-			return
-		}
-
-		await this.handleModPaginationCollector({
-			response,
-			userId: interaction.user.id,
-			chunks,
-			clan,
-			interaction
-		})
-	}
-
-	async miembros (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guildId || !interaction.guild) {
-			await interaction.reply({
-				content: "❌ Este comando solo funciona en servidores.",
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
-		try {
-			await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-
-			const rol = interaction.options.getRole("rol", true)
-
-			const clan = await this.service.getClanByRole(interaction.guild.id, rol.id)
-			if (!clan) {
-				await interaction.editReply({
-					embeds: [this.buildErrorEmbed("No se encontró un clan con ese rol.")]
-				})
-				return
-			}
-
-			await this.processMembersPagination({ interaction, guild: interaction.guild, clan })
-		} catch (error) {
-			clanLogger.error("Error al listar miembros del clan:", error)
-			await interaction.editReply({
-				content: "❌ Error al listar los miembros del clan."
-			})
-		}
-	}
-
-	private async buildMemberList (members: string[], leaders: string[], guild: Guild): Promise<string[]> {
-		const memberList: string[] = []
-		for (const userId of members) {
-			const member = await guild.members.fetch(userId)
-			if (!member) {
-				continue
-			}
-
-			const badge = leaders.includes(userId) ? "👑" : "👤"
-			memberList.push(`${badge} <@${member.user.id}> (${member.user.tag})`)
-		}
-		return memberList
-	}
-
-	private chunkArray<T> (array: T[], size: number): T[][] {
-		const chunks: T[][] = []
-		for (let i = 0; i < array.length; i += size) {
-			chunks.push(array.slice(i, i + size))
-		}
-		return chunks
-	}
-
-	private buildModMemberEmbed (clan: IClan, chunks: string[][], page: number): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0x0099ff)
-			.setTitle(`Miembros del clan ${clan.icon} ${clan.name}`)
-			.setDescription(chunks[page].join("\n"))
-			.setFooter({
-				text: `Página ${page + 1}/${chunks.length} • Total: ${clan.members.length} miembros`
-			})
-			.setTimestamp()
-	}
-
-	private buildModPaginationButtons (page: number, totalPages: number): ActionRowBuilder<ButtonBuilder> {
-		return new ActionRowBuilder<ButtonBuilder>().addComponents(
-			new ButtonBuilder()
-				.setCustomId("prev_page_mod")
-				.setLabel("◀ Anterior")
-				.setStyle(ButtonStyle.Primary)
-				.setDisabled(page === 0),
-			new ButtonBuilder()
-				.setCustomId("next_page_mod")
-				.setLabel("Siguiente ▶")
-				.setStyle(ButtonStyle.Primary)
-				.setDisabled(page === totalPages - 1)
-		)
-	}
-
-	private async handleModPaginationCollector (params: {
-		response: Message
-		userId: string
-		chunks: string[][]
-		clan: IClan
-		interaction: CommandContext["interaction"]
-	}): Promise<void> {
-		const { response, userId, chunks, clan, interaction } = params
-		let currentPage = 0
-		const collector = response.createMessageComponentCollector({
-			componentType: ComponentType.Button,
-			time: 300000
-		})
-
-		collector.on("collect", async (buttonInteraction: ButtonInteraction) => {
-			if (buttonInteraction.user.id !== userId) {
-				await buttonInteraction.reply({
-					content: "Solo el moderador que ejecutó el comando puede navegar por las páginas.",
-					flags: MessageFlags.Ephemeral
-				})
-				return
-			}
-
-			if (buttonInteraction.customId === "prev_page_mod") {
-				currentPage = Math.max(0, currentPage - 1)
-			} else if (buttonInteraction.customId === "next_page_mod") {
-				currentPage = Math.min(chunks.length - 1, currentPage + 1)
-			}
-
-			await buttonInteraction.update({
-				embeds: [this.buildModMemberEmbed(clan, chunks, currentPage)],
-				components: [this.buildModPaginationButtons(currentPage, chunks.length)]
-			})
-		})
-
-		collector.on("end", () => {
-			interaction.editReply({ components: [] }).catch(() => {
-				// Ignorar errores si el mensaje ya fue eliminado
-			})
-		})
-	}
-
-	private buildListEmbed (clans: IClan[], verEliminados: boolean): EmbedBuilder {
-		const titulo = verEliminados
-			? `🗁️ Clanes eliminados (${clans.length})`
-			: `📋 Clanes del servidor (${clans.length})`
-
-		const embed = new EmbedBuilder()
-			.setColor(verEliminados ? 0xff0000 : 0x0099ff)
-			.setTitle(titulo)
-			.setDescription("Selecciona un clan del menú para ver sus detalles")
-
-		if (clans.length > 25) {
-			embed.setFooter({ text: `Mostrando 25 de ${clans.length}` })
-		}
-
-		return embed
-	}
-
-	private buildSelectMenuOptions (clans: IClan[]): StringSelectMenuOptionBuilder[] {
-		return clans.slice(0, 25).map((c) => new StringSelectMenuOptionBuilder()
-			.setLabel(`${c.icon} ${c.name}`)
-			.setDescription(`${c.icon} ${c.name}`)
-			.setValue(c._id.toString()))
-	}
-
-	private buildSelectMenuRow (clans: IClan[]): ActionRowBuilder<StringSelectMenuBuilder> {
-		const options = this.buildSelectMenuOptions(clans)
-		const selectMenu = new StringSelectMenuBuilder()
-			.setCustomId("clan_select")
-			.setPlaceholder("Selecciona un clan...")
-			.addOptions(options)
-
-		return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu)
-	}
-}
-
-registerCommand(ClanModCommand, {
+import {
+	ApplicationCommandOptionType,
+	MessageFlags,
+	PermissionFlagsBits
+} from "discord.js"
+import { ClanModService } from "../services/clan-mod.service"
+
+@Injectable(ClanModService)
+@SlashCommand({
 	name: "clan-mod",
 	description: "Comandos de moderación de clanes",
 	permissions: PermissionFlagsBits.ManageChannels | PermissionFlagsBits.ManageRoles
 })
+export class ClanModCommand {
+	constructor (private readonly service: ClanModService) {}
 
-registerSubCommand(ClanModCommand, "crear", {
-	name: "crear",
-	description: "Crea un nuevo clan",
-	options: [
-		{
-			name: "nombre",
-			description: "Nombre del clan",
-			type: ApplicationCommandOptionType.String,
-			required: true
-		},
-		{
-			name: "icono",
-			description: "Emoji o icono del clan",
-			type: ApplicationCommandOptionType.String,
-			required: true
-		},
-		{
-			name: "lider",
-			description: "Usuario que será el líder del clan",
-			type: ApplicationCommandOptionType.User,
-			required: true
-		}
-	]
-})
+	@Subcommand({
+		name: "crear",
+		description: "Crea un nuevo clan",
+		options: [
+			{
+				name: "nombre",
+				description: "Nombre del clan",
+				type: ApplicationCommandOptionType.String,
+				required: true
+			},
+			{
+				name: "icono",
+				description: "Emoji o icono del clan",
+				type: ApplicationCommandOptionType.String,
+				required: true
+			},
+			{
+				name: "lider",
+				description: "Usuario que será el líder del clan",
+				type: ApplicationCommandOptionType.User,
+				required: true
+			}
+		]
+	})
+	async create ({ interaction }: CommandContext): Promise<void> {
+		const nombre = interaction.options.getString("nombre", true)
+		const icono = interaction.options.getString("icono", true)
+		const lider = interaction.options.getUser("lider", true)
 
-registerSubCommand(ClanModCommand, "eliminar", {
-	name: "eliminar",
-	description: "Elimina un clan existente",
-	options: [
-		{
-			name: "rol",
-			description: "Rol del clan a eliminar",
-			type: ApplicationCommandOptionType.Role,
-			required: true
-		}
-	]
-})
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-registerSubCommand(ClanModCommand, "añadirLider", {
-	name: "añadir-lider",
-	description: "Añade un líder a un clan",
-	options: [
-		{
-			name: "rol",
-			description: "Rol del clan",
-			type: ApplicationCommandOptionType.Role,
-			required: true
-		},
-		{
-			name: "usuario",
-			description: "Usuario a añadir como líder",
-			type: ApplicationCommandOptionType.User,
-			required: true
-		}
-	]
-})
+		const reply = await this.service.create({
+			guildId: interaction.guild!.id,
+			name: nombre,
+			icon: icono,
+			leader: lider,
+			user: interaction.user
+		})
+		await interaction.editReply(reply)
+	}
 
-registerSubCommand(ClanModCommand, "eliminarLider", {
-	name: "eliminar-lider",
-	description: "Elimina un líder de un clan",
-	options: [
-		{
-			name: "rol",
-			description: "Rol del clan",
-			type: ApplicationCommandOptionType.Role,
-			required: true
-		},
-		{
-			name: "usuario",
-			description: "Líder a eliminar",
-			type: ApplicationCommandOptionType.User,
-			required: true
-		}
-	]
-})
+	@Subcommand({
+		name: "eliminar",
+		description: "Elimina un clan existente",
+		options: [
+			{
+				name: "rol",
+				description: "Rol del clan a eliminar",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			}
+		]
+	})
+	async delete ({ interaction }: CommandContext): Promise<void> {
+		const rol = interaction.options.getRole("rol", true)
 
-registerSubCommand(ClanModCommand, "añadirMiembro", {
-	name: "añadir-miembro",
-	description: "Añade un miembro a un clan",
-	options: [
-		{
-			name: "rol",
-			description: "Rol del clan",
-			type: ApplicationCommandOptionType.Role,
-			required: true
-		},
-		{
-			name: "usuario",
-			description: "Usuario a añadir",
-			type: ApplicationCommandOptionType.User,
-			required: true
-		}
-	]
-})
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-registerSubCommand(ClanModCommand, "expulsar", {
-	name: "expulsar",
-	description: "Expulsa un miembro de un clan",
-	options: [
-		{
-			name: "rol",
-			description: "Rol del clan",
-			type: ApplicationCommandOptionType.Role,
-			required: true
-		},
-		{
-			name: "usuario",
-			description: "Miembro a expulsar",
-			type: ApplicationCommandOptionType.User,
-			required: true
-		}
-	]
-})
+		const reply = await this.service.deleteClan(interaction.guild!.id, rol)
+		await interaction.editReply(reply)
+	}
 
-registerSubCommand(ClanModCommand, "añadirCanal", {
-	name: "añadir-canal",
-	description: "Añade un canal de voz extra al clan",
-	options: [
-		{
-			name: "rol",
-			description: "Rol del clan",
-			type: ApplicationCommandOptionType.Role,
-			required: true
-		}
-	]
-})
+	@Subcommand({
+		name: "añadir-lider",
+		description: "Añade un líder a un clan",
+		options: [
+			{
+				name: "rol",
+				description: "Rol del clan",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			},
+			{
+				name: "usuario",
+				description: "Usuario a añadir como líder",
+				type: ApplicationCommandOptionType.User,
+				required: true
+			}
+		]
+	})
+	async addLeader ({ interaction }: CommandContext): Promise<void> {
+		const targetUser = interaction.options.getUser("usuario", true)
+		const role = interaction.options.getRole("rol", true)
 
-registerSubCommand(ClanModCommand, "eliminarCanal", {
-	name: "eliminar-canal",
-	description: "Elimina el último canal de voz extra del clan",
-	options: [
-		{
-			name: "rol",
-			description: "Rol del clan",
-			type: ApplicationCommandOptionType.Role,
-			required: true
-		}
-	]
-})
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+		const reply = await this.service.addLeader(
+			interaction.guild!.id,
+			role,
+			targetUser,
+			interaction.user.id
+		)
+		await interaction.editReply(reply)
+	}
 
-registerSubCommand(ClanModCommand, "info", {
-	name: "info",
-	description: "Muestra información de los clanes del servidor",
-	options: [
-		{
-			name: "ver-eliminados",
-			description: "Incluir clanes eliminados en la información",
-			type: ApplicationCommandOptionType.Boolean,
-			required: false
-		}
-	]
-})
+	@Subcommand({
+		name: "eliminar-lider",
+		description: "Elimina un líder de un clan",
+		options: [
+			{
+				name: "rol",
+				description: "Rol del clan",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			},
+			{
+				name: "usuario",
+				description: "Líder a eliminar",
+				type: ApplicationCommandOptionType.User,
+				required: true
+			}
+		]
+	})
+	async removeLeader ({ interaction }: CommandContext): Promise<void> {
+		const targetUser = interaction.options.getUser("usuario", true)
+		const role = interaction.options.getRole("rol", true)
 
-registerSubCommand(ClanModCommand, "miembros", {
-	name: "miembros",
-	description: "Muestra los miembros de un clan",
-	options: [
-		{
-			name: "rol",
-			description: "Rol del clan",
-			type: ApplicationCommandOptionType.Role,
-			required: true
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+		const reply = await this.service.removeLeader(
+			interaction.guild!.id,
+			role,
+			targetUser,
+			interaction.user.id
+		)
+		await interaction.editReply(reply)
+	}
+
+	@Subcommand({
+		name: "añadir-miembro",
+		description: "Añade un miembro a un clan",
+		options: [
+			{
+				name: "rol",
+				description: "Rol del clan",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			},
+			{
+				name: "usuario",
+				description: "Usuario a añadir",
+				type: ApplicationCommandOptionType.User,
+				required: true
+			}
+		]
+	})
+	async addMember ({ interaction }: CommandContext): Promise<void> {
+		const targetUser = interaction.options.getUser("usuario", true)
+		const role = interaction.options.getRole("rol", true)
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const reply = await this.service.addMember(interaction.guild!.id, role, targetUser, interaction.user.id)
+		await interaction.editReply(reply)
+	}
+
+	@Subcommand({
+		name: "expulsar",
+		description: "Expulsa un miembro de un clan",
+		options: [
+			{
+				name: "rol",
+				description: "Rol del clan",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			},
+			{
+				name: "usuario",
+				description: "Miembro a expulsar",
+				type: ApplicationCommandOptionType.User,
+				required: true
+			}
+		]
+	})
+	async kick ({ interaction }: CommandContext): Promise<void> {
+		const targetUser = interaction.options.getUser("usuario", true)
+		const role = interaction.options.getRole("rol", true)
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const reply = await this.service.kickUser(interaction.guild!.id, role, targetUser, interaction.user.id)
+		await interaction.editReply(reply)
+	}
+
+	@Subcommand({
+		name: "añadir-canal",
+		description: "Añade un canal de voz extra al clan",
+		options: [
+			{
+				name: "rol",
+				description: "Rol del clan",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			}
+		]
+	})
+	async addChannel ({ interaction }: CommandContext): Promise<void> {
+		const role = interaction.options.getRole("rol", true)
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const reply = await this.service.addChannel(interaction.guild!.id, role, interaction.user.id)
+		await interaction.editReply(reply)
+	}
+
+	@Subcommand({
+		name: "eliminar-canal",
+		description: "Elimina el último canal de voz extra del clan",
+		options: [
+			{
+				name: "rol",
+				description: "Rol del clan",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			}
+		]
+	})
+	async removeChannel ({ interaction }: CommandContext): Promise<void> {
+		const role = interaction.options.getRole("rol", true)
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const reply = await this.service.removeChannel(interaction.guild!.id, role, interaction.user.id)
+		await interaction.editReply(reply)
+	}
+
+	@Subcommand({
+		name: "info",
+		description: "Muestra información de los clanes del servidor",
+		options: [
+			{
+				name: "ver-eliminados",
+				description: "Incluir clanes eliminados en la información",
+				type: ApplicationCommandOptionType.Boolean,
+				required: false
+			}
+		]
+	})
+	async info ({ interaction }: CommandContext): Promise<void> {
+		const verEliminados = interaction.options.getBoolean("ver-eliminados") ?? false
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const reply = await this.service.getClanInfo(interaction.guild!.id, verEliminados)
+		await interaction.editReply(reply)
+	}
+
+	@Subcommand({
+		name: "miembros",
+		description: "Muestra los miembros de un clan",
+		options: [
+			{
+				name: "rol",
+				description: "Rol del clan",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			}
+		]
+	})
+	async members ({ interaction }: CommandContext): Promise<void> {
+		const role = interaction.options.getRole("rol", true)
+
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+		const reply = await this.service.getClanMembers(interaction.guild!, role)
+		const response = await interaction.editReply(reply)
+
+		if (!reply.chunks || reply.chunks.length === 1) {
+			return
 		}
-	]
-})
+
+		await this.service.handleModPaginationCollector({
+			response,
+			userId: interaction.user.id,
+			chunks: reply.chunks,
+			clan: reply.clan!,
+			interaction
+		})
+
+	}
+}

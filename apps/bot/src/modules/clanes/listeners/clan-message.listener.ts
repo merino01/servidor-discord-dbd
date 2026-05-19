@@ -1,7 +1,7 @@
 import { Events, Message } from "discord.js"
 import { registerEvent } from "@/core/event-registry"
 import { ClanModel } from "@org/mongo"
-import { clanStatsService } from "../repositories/clan-stats.repository"
+import { clanStatsRepository } from "../repositories/clan-stats.repository"
 
 /**
  * Listener para registrar mensajes en canales de clanes
@@ -30,7 +30,7 @@ registerEvent(Events.MessageCreate, async (message: Message) => {
 		}
 
 		// Registrar el mensaje en las estadísticas
-		await clanStatsService.registerMessage(clan._id, message.author.id)
+		await clanStatsRepository.registerMessage(clan._id, message.author.id)
 	} catch (error) {
 		console.error("Error registering clan message:", error)
 	}

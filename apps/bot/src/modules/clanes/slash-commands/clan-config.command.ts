@@ -4,12 +4,12 @@ import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ChannelType, Applicati
 import { botLogger } from "@/core/logger"
 import { ClanConfigModel, IClanConfig, ClanModel } from "@org/mongo"
 import { BaseCommand } from "@/core/base/base-command"
-import { ClanService } from "../repositories/clan.repository"
+import { ClanRepository } from "../repositories/clan.repository"
 
 const clanLogger = botLogger.child("clanes-config")
 
 export class ClanConfigCommand extends BaseCommand {
-	protected service = ClanService.getInstance()
+	protected service = ClanRepository.getInstance()
 	private buildSuccessEmbed (title: string, description: string): EmbedBuilder {
 		return new EmbedBuilder()
 			.setColor(0x00ff00)

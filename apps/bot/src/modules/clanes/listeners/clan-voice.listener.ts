@@ -1,7 +1,7 @@
 import { Events, VoiceState } from "discord.js"
 import { registerEvent } from "@/core/event-registry"
 import { ClanModel } from "@org/mongo"
-import { clanStatsService } from "../repositories/clan-stats.repository"
+import { clanStatsRepository } from "../repositories/clan-stats.repository"
 
 interface VoiceSession {
 	userId: string
@@ -73,7 +73,7 @@ async function handleVoiceLeave (state: VoiceState): Promise<void> {
 		})
 
 		if (clan) {
-			await clanStatsService.registerVoiceTime(clan._id, session.userId, minutes)
+			await clanStatsRepository.registerVoiceTime(clan._id, session.userId, minutes)
 		}
 	}
 

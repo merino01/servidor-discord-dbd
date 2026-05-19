@@ -956,15 +956,14 @@ export class ClanRepository {
 	private async validateInvitation (
 		clan: IClan,
 		userId: string,
-		config: IClanConfig,
 		clanId: string
 	): Promise<string | null> {
 		if (clan.members.includes(userId)) {
 			return "El usuario ya es miembro del clan"
 		}
 
-		if (clan.members.length >= config.maxMembers) {
-			return `El clan ha alcanzado el límite de ${config.maxMembers} miembros`
+		if (clan.members.length >= clan.maxMembers) {
+			return `El clan ha alcanzado el límite de ${clan.maxMembers} miembros`
 		}
 
 		const userClan = await ClanModel.findOne({ guildId: clan.guildId, members: userId, isActive: true })
@@ -1000,7 +999,7 @@ export class ClanRepository {
 			return { success: false, error: "Configuración de clanes no encontrada" }
 		}
 
-		const validationError = await this.validateInvitation(clan, params.userId, config, params.clanId)
+		const validationError = await this.validateInvitation(clan, params.userId, params.clanId)
 		if (validationError) {
 			return { success: false, error: validationError }
 		}
@@ -1192,5 +1191,12 @@ export class ClanRepository {
 			clanLogger.error("Error actualizando configuración del clan:", error)
 			return { success: false, error: "Error al actualizar la configuración del clan" }
 		}
+	}
+
+	async getAllClans (guildId: string, deleted = false): Promise<IClan[]> {
+		return ClanModel.find({
+			guildId,
+			isActive: !deleted
+		}).sort({ createdAt: -1 })
 	}
 }

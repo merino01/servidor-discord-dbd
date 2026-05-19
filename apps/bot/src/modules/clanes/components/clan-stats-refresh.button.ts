@@ -1,7 +1,7 @@
 import { ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js"
 import { registerButton } from "@/core/components/component-registry"
 import { ClanModel, IClanStats } from "@org/mongo"
-import { clanStatsService } from "../repositories/clan-stats.repository"
+import { clanStatsRepository } from "../repositories/clan-stats.repository"
 
 function addGeneralStatsField (embed: EmbedBuilder, stats: IClanStats): void {
 	const hours = Math.floor(stats.totalVoiceMinutes / 60)
@@ -20,7 +20,7 @@ function addGeneralStatsField (embed: EmbedBuilder, stats: IClanStats): void {
 }
 
 async function addMessageRankingField (embed: EmbedBuilder, stats: IClanStats): Promise<void> {
-	const messageRanking = await clanStatsService.getMemberMessageRanking(stats.clanId, 5)
+	const messageRanking = await clanStatsRepository.getMemberMessageRanking(stats.clanId, 5)
 
 	if (messageRanking.length > 0) {
 		const messageRankingText = messageRanking
@@ -39,7 +39,7 @@ async function addMessageRankingField (embed: EmbedBuilder, stats: IClanStats): 
 }
 
 async function addVoiceRankingField (embed: EmbedBuilder, stats: IClanStats): Promise<void> {
-	const voiceRanking = await clanStatsService.getMemberVoiceRanking(stats.clanId, 5)
+	const voiceRanking = await clanStatsRepository.getMemberVoiceRanking(stats.clanId, 5)
 
 	if (voiceRanking.length > 0) {
 		const voiceRankingText = voiceRanking
@@ -106,7 +106,7 @@ registerButton("clan_stats", async (interaction: ButtonInteraction) => {
 			return
 		}
 
-		const stats = await clanStatsService.getClanStats(clan._id)
+		const stats = await clanStatsRepository.getClanStats(clan._id)
 		if (!stats) {
 			await interaction.followUp({
 				content: "❌ No hay estadísticas disponibles para este clan.",

@@ -1,8 +1,8 @@
 import { ButtonInteraction, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from "discord.js"
 import { registerButton } from "@/core/components/component-registry"
-import { ClanService } from "../repositories/clan.repository"
+import { ClanRepository } from "../repositories/clan.repository"
 
-const clanService = ClanService.getInstance()
+const clanService = ClanRepository.getInstance()
 
 function buildDisabledButtons (): ActionRowBuilder<ButtonBuilder> {
 	return new ActionRowBuilder<ButtonBuilder>().addComponents(

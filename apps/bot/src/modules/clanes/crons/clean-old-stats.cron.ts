@@ -1,9 +1,9 @@
 import { scheduleCronJob } from "@/core/schedule-cron-job"
-import { clanStatsService } from "../repositories/clan-stats.repository"
+import { clanStatsRepository } from "../repositories/clan-stats.repository"
 
 const cleanOldStats = async () => {
 	try {
-		await clanStatsService.cleanOldStats()
+		await clanStatsRepository.cleanOldStats()
 		console.log("✅ Estadísticas antiguas de clanes limpiadas correctamente")
 	} catch (error) {
 		console.error("❌ Error al limpiar estadísticas antiguas de clanes:", error)

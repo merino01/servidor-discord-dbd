@@ -86,4 +86,5 @@ export interface SubCommandGroupMetadata {
  * Tipo para las respuestas de las funciones de los servicios
  */
 
-export type CommandReply = Omit<InteractionReplyOptions, "flags">
+export type CommandReply<T = Record<string, unknown>> = Omit<InteractionReplyOptions, "flags"> & T
+

@@ -1,9 +1,9 @@
 import { registerEvent } from "@/core/event-registry"
 import { Events } from "discord.js"
-import { ClanService } from "../repositories/clan.repository"
+import { ClanRepository } from "../repositories/clan.repository"
 
 const handleMemberLeave = async ({ userId, guildId }: { userId: string, guildId: string }) => {
-	const service = ClanService.getInstance()
+	const service = ClanRepository.getInstance()
 
 	const userClan = await service.getClanByMember(guildId, userId)
 	if (userClan) {
