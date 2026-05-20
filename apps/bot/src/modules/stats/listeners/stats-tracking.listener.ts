@@ -33,7 +33,7 @@ export class StatsTrakingListener {
 		statsLogger.info("Stats tracking listeners initialized")
 
 		// Iniciar el intervalo de guardado periódico (cada 5 minutos)
-		setInterval(this.saveAllActiveVoiceStats, VOICE_STATS_SAVE_INTERVAL)
+		setInterval(() => this.saveAllActiveVoiceStats(), VOICE_STATS_SAVE_INTERVAL)
 		statsLogger.info(
 			`Voice stats periodic save enabled (interval: ${VOICE_STATS_SAVE_INTERVAL / 1000}s)`
 		)
