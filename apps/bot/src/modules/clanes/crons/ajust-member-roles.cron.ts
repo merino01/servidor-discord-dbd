@@ -77,6 +77,6 @@ export class AjusMemberRolesCron {
 	}
 
 	register () {
-		scheduleCronJob("0 0 0 * * *", this.ajustMemberRolesCron, "AjustarMiembrosYRolesDeClan")
+		scheduleCronJob("0 0 0 * * *",() => this.ajustMemberRolesCron(), "AjustarMiembrosYRolesDeClan")
 	}
 }

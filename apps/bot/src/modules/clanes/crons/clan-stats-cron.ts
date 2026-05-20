@@ -62,6 +62,6 @@ export class ClanStatsCron {
 	}
 
 	register () {
-		scheduleCronJob("0 15 13 * * *", this.getClanStatsForLastMonth, "obtenerEstadisticasDeClanes")
+		scheduleCronJob("0 15 13 * * *",() => this.getClanStatsForLastMonth(), "obtenerEstadisticasDeClanes")
 	}
 }
