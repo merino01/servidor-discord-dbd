@@ -1,10 +1,9 @@
 import { Injectable } from "@/core/container"
 import { CommandContext, CommandReply } from "@/core/types"
-import { buildErrorEmbed } from "@/modules/echo/utils/embed"
 import { APIRole, CategoryChannel, EmbedBuilder, Role } from "discord.js"
 import { ClanRepository } from "../repositories/clan.repository"
 import { botLogger } from "@/core/logger"
-import { buildSuccessEmbed } from "../utils/embeds"
+import { buildErrorEmbed, buildSuccessEmbed } from "../utils/embeds"
 import { IClanConfig } from "@org/mongo"
 
 interface IConfigureParams{

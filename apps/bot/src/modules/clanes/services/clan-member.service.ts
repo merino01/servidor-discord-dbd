@@ -12,8 +12,7 @@ import {
 	User
 } from "discord.js"
 import { ClanRepository } from "../repositories/clan.repository"
-import { buildErrorEmbed } from "@/modules/echo/utils/embed"
-import { buildMemberEmbed, buildSuccessEmbed } from "../utils/embeds"
+import { buildMemberEmbed, buildSuccessEmbed, buildErrorEmbed } from "../utils/embeds"
 import { botLogger } from "@/core/logger"
 import { IClan, IClanInvitation } from "@org/mongo"
 import { chunkArray, MembersExtraData } from "../utils/members"

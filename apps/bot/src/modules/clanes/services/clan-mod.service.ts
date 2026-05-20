@@ -1,7 +1,7 @@
 import { Injectable } from "@/core/container"
 import { botLogger } from "@/core/logger"
 import { CommandContext, CommandReply } from "@/core/types"
-import { buildErrorEmbed } from "@/modules/echo/utils/embed"
+import { buildErrorEmbed } from "../utils/embeds"
 import { IClan } from "@org/mongo"
 import {
 	ActionRowBuilder,
