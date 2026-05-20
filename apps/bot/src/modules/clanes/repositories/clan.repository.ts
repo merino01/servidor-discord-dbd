@@ -1,12 +1,3 @@
-import {
-	ClanModel,
-	ClanInvitationModel,
-	ClanConfigModel,
-	IClan,
-	IClanInvitation,
-	IClanConfig,
-	ClanInvitationStatus
-} from "@org/mongo"
 import { BotInstance } from "@/core/bot-instance"
 import { botLogger } from "@/core/logger"
 import {
@@ -19,19 +10,20 @@ import {
 } from "discord.js"
 import { botEvents } from "@/core/events/bot-events"
 import { getChannelPermissions } from "../utils/get-channel-permissions"
+import {
+	ClanConfigModel,
+	ClanInvitationModel,
+	ClanModel,
+	ClanInvitationStatus,
+	IClan,
+	IClanConfig,
+	IClanInvitation,
+	Document
+} from "@org/mongo"
 
 const clanLogger = botLogger.child("clanes")
 
-export class ClanService {
-	private static instance: ClanService
-
-	static getInstance (): ClanService {
-		if (!ClanService.instance) {
-			ClanService.instance = new ClanService()
-		}
-		return ClanService.instance
-	}
-
+export class ClanRepository {
 	private async cleanupClanCreation (
 		role: Role | null,
 		textChannel: TextChannel | null,
@@ -956,15 +948,14 @@ export class ClanService {
 	private async validateInvitation (
 		clan: IClan,
 		userId: string,
-		config: IClanConfig,
 		clanId: string
 	): Promise<string | null> {
 		if (clan.members.includes(userId)) {
 			return "El usuario ya es miembro del clan"
 		}
 
-		if (clan.members.length >= config.maxMembers) {
-			return `El clan ha alcanzado el límite de ${config.maxMembers} miembros`
+		if (clan.members.length >= clan.maxMembers) {
+			return `El clan ha alcanzado el límite de ${clan.maxMembers} miembros`
 		}
 
 		const userClan = await ClanModel.findOne({ guildId: clan.guildId, members: userId, isActive: true })
@@ -1000,7 +991,7 @@ export class ClanService {
 			return { success: false, error: "Configuración de clanes no encontrada" }
 		}
 
-		const validationError = await this.validateInvitation(clan, params.userId, config, params.clanId)
+		const validationError = await this.validateInvitation(clan, params.userId, params.clanId)
 		if (validationError) {
 			return { success: false, error: validationError }
 		}
@@ -1192,5 +1183,49 @@ export class ClanService {
 			clanLogger.error("Error actualizando configuración del clan:", error)
 			return { success: false, error: "Error al actualizar la configuración del clan" }
 		}
+	}
+
+	async setClanConfig (params: Omit<IClanConfig,
+		keyof Document |"color" | "createdAt" | "enabled" | "additionalRoleIds" | "updatedAt">
+		& {colorHex?: string | null}): Promise<IClanConfig> {
+		const {
+			guildId,
+			categoryTextId,
+			categoryVoiceId,
+			leaderRoleId,
+			invitationExpirationHours,
+			maxExtraVoiceChannels,
+			maxMembers,
+			colorHex } = params
+		return await ClanConfigModel.findOneAndUpdate(
+			{ guildId: params.guildId },
+			{
+				guildId,
+				enabled: true,
+				leaderRoleId,
+				categoryVoiceId,
+				categoryTextId,
+				color: colorHex ? parseInt(colorHex, 16) : null,
+				maxMembers,
+				maxExtraVoiceChannels,
+				invitationExpirationHours
+			},
+			{ upsert: true, new: true }
+		)
+	}
+
+	async getAllClans (guildId: string, deleted = false): Promise<IClan[]> {
+		return ClanModel.find({
+			guildId,
+			isActive: !deleted
+		}).sort({ createdAt: -1 })
+	}
+
+	async getClanByChannelId (guildId: string, channelId:string): Promise<IClan | null> {
+		return ClanModel.findOne({
+			guildId,
+			textChannelIds: channelId,
+			isActive: true
+		})
 	}
 }

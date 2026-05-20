@@ -1,20 +1,28 @@
-import { registerEvent } from "@/core/event-registry"
-import { Events } from "discord.js"
-import { ClanService } from "../services/clan.service"
+import { botEvents } from "@/core/events/bot-events"
+import { ClanRepository } from "../repositories/clan.repository"
+import { Injectable } from "@/core/container"
 
-const handleMemberLeave = async ({ userId, guildId }: { userId: string, guildId: string }) => {
-	const service = ClanService.getInstance()
+@Injectable(ClanRepository)
+export class MemberLeaveEvent {
+	constructor (private readonly repository: ClanRepository) {}
 
-	const userClan = await service.getClanByMember(guildId, userId)
-	if (userClan) {
-		await service.removeMember(
-			userClan._id.toString(),
-			userId,
-			"system",
-			true
-		)
+	private async handleMemberLeave ({ userId, guildId }: { userId: string, guildId: string }) {
+		const userClan = await this.repository.getClanByMember(guildId, userId)
+		if (userClan) {
+			await this.repository.removeMember(
+				userClan._id.toString(),
+				userId,
+				"system",
+				true
+			)
+		}
+	}
+
+	register () {
+		botEvents.on("member:leave", (member) => this.handleMemberLeave({
+			userId: member.id,
+			guildId: member.guild.id
+		}))
+		botEvents.on("member:ban", (guild, userId) => this.handleMemberLeave({ userId, guildId: guild.id }))
 	}
 }
-
-registerEvent(Events.GuildMemberRemove, (member) => handleMemberLeave({ userId: member.id, guildId: member.guild.id }))
-registerEvent(Events.GuildBanAdd, (ban) => handleMemberLeave({ userId: ban.user.id, guildId: ban.guild.id }))

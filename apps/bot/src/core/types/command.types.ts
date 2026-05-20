@@ -1,7 +1,8 @@
 import {
 	SlashCommandBuilder,
 	ChatInputCommandInteraction,
-	ApplicationCommandOption
+	ApplicationCommandOption,
+	InteractionReplyOptions
 } from "discord.js"
 
 /**
@@ -80,3 +81,10 @@ export interface SubCommandGroupMetadata {
   name: string;
   description: string;
 }
+
+/**
+ * Tipo para las respuestas de las funciones de los servicios
+ */
+
+export type CommandReply<T = Record<string, unknown>> = Omit<InteractionReplyOptions, "flags"> & T
+

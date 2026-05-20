@@ -39,7 +39,10 @@ const ClanSchema = new Schema<IClan>({
 	roleColor: { type: Number }
 })
 
-ClanSchema.index({ guildId: 1, name: 1 }, { unique: true })
+ClanSchema.index({ guildId: 1, name: 1 }, {
+	unique: true,
+	partialFilterExpression: { isActive: true }
+})
 ClanSchema.index({ guildId: 1, roleId: 1 })
 
 export const ClanModel = model<IClan>("clan", ClanSchema)

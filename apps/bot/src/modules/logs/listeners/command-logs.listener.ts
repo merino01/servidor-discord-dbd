@@ -1,8 +1,10 @@
-import { botEvents } from "@/core/events/bot-events"
-import { LogConfigModel, CommandLogModel } from "@org/mongo"
-import { logger } from "@org/logger"
-import { EmbedBuilder, TextChannel, ChatInputCommandInteraction } from "discord.js"
 import { BotInstance } from "@/core/bot-instance"
+import { Injectable } from "@/core/container"
+import { botEvents } from "@/core/events/bot-events"
+import { logger } from "@org/logger"
+import { CommandLogModel } from "@org/mongo"
+import { ChatInputCommandInteraction, EmbedBuilder, TextChannel } from "discord.js"
+import { LogsRepository } from "../repositories/logs.repository"
 
 const logsLogger = logger.child("logs")
 
@@ -27,119 +29,127 @@ interface ErrorEmbedData {
 	error: Error
 }
 
-async function saveCommandLog (data: CommandLogData): Promise<void> {
-	if (!data.interaction.guildId) {return}
+@Injectable(LogsRepository)
+export class CommandLogsListener {
+	constructor (protected readonly repository: LogsRepository) {}
 
-	await CommandLogModel.create({
-		guildId: data.interaction.guildId,
-		userId: data.interaction.user.id,
-		username: data.interaction.user.tag,
-		commandName: data.interaction.commandName,
-		commandPath: data.commandPath,
-		options: data.options,
-		channelId: data.interaction.channelId,
-		success: data.success,
-		...(data.error && { error: data.error })
-	})
-}
+	private async saveCommandLog (data: CommandLogData): Promise<void> {
+		if (!data.interaction.guildId) {return}
 
-async function sendCommandLogEmbed (data: CommandEmbedData): Promise<void> {
-	const bot = BotInstance.getOrNull()
-	if (!bot) {return}
-
-	const channel = await bot.channels.fetch(data.channelId)
-	if (!channel?.isTextBased()) {return}
-
-	const embed = new EmbedBuilder()
-		.setColor(0x5865f2)
-		.setTitle("📝 Comando Ejecutado")
-		.addFields(
-			{ name: "Comando", value: `\`${data.commandPath}\``, inline: true },
-			{ name: "Usuario", value: `${data.interaction.user} (${data.interaction.user.tag})`, inline: true },
-			{ name: "Canal", value: `<#${data.interaction.channelId}>`, inline: true }
-		)
-		.setTimestamp()
-
-	if (Object.keys(data.options).length > 0) {
-		const optionsStr = Object.entries(data.options)
-			.map(([key, value]) => `**${key}:** ${value}`)
-			.join("\n")
-		embed.addFields({ name: "Opciones", value: optionsStr })
+		await CommandLogModel.create({
+			guildId: data.interaction.guildId,
+			userId: data.interaction.user.id,
+			username: data.interaction.user.tag,
+			commandName: data.interaction.commandName,
+			commandPath: data.commandPath,
+			options: data.options,
+			channelId: data.interaction.channelId,
+			success: data.success,
+			...(data.error && { error: data.error })
+		})
 	}
 
-	await (channel as TextChannel).send({ embeds: [embed] })
-}
+	private async sendCommandLogEmbed (data: CommandEmbedData): Promise<void> {
+		const bot = BotInstance.getOrNull()
+		if (!bot) { return }
 
-async function sendCommandErrorEmbed (data: ErrorEmbedData): Promise<void> {
-	const bot = BotInstance.getOrNull()
-	if (!bot) {return}
+		const channel = await bot.channels.fetch(data.channelId)
+		if (!channel?.isTextBased()) {return}
 
-	const channel = await bot.channels.fetch(data.channelId)
-	if (!channel?.isTextBased()) {return}
+		const embed = new EmbedBuilder()
+			.setColor(0x5865f2)
+			.setTitle("📝 Comando Ejecutado")
+			.addFields(
+				{ name: "Comando", value: `\`${data.commandPath}\``, inline: true },
+				{ name: "Usuario", value: `${data.interaction.user} (${data.interaction.user.tag})`, inline: true },
+				{ name: "Canal", value: `<#${data.interaction.channelId}>`, inline: true }
+			)
+			.setTimestamp()
 
-	const embed = new EmbedBuilder()
-		.setColor(0xed4245)
-		.setTitle("❌ Error en Comando")
-		.addFields(
-			{ name: "Comando", value: `\`/${data.interaction.commandName}\``, inline: true },
-			{ name: "Usuario", value: `${data.interaction.user} (${data.interaction.user.tag})`, inline: true },
-			{ name: "Canal", value: `<#${data.interaction.channelId}>`, inline: true },
-			{ name: "Error", value: `\`\`\`${data.error.message.substring(0, 1000)}\`\`\`` }
-		)
-		.setTimestamp()
-
-	await (channel as TextChannel).send({ embeds: [embed] })
-}
-
-/**
- * Listener de logs de comandos
- * Guarda en DB y envía embed al canal configurado
- */
-botEvents.on("command:executed", async (interaction, commandPath, options) => {
-	if (!interaction.guildId) {return}
-
-	try {
-		await saveCommandLog({ interaction, commandPath, options, success: true })
-
-		const config = await LogConfigModel.findOne({ guildId: interaction.guildId })
-
-		if (config?.commands?.enabled && config.commands.channelId) {
-			await sendCommandLogEmbed({
-				channelId: config.commands.channelId,
-				interaction,
-				commandPath,
-				options
-			})
+		if (Object.keys(data.options).length > 0) {
+			const optionsStr = Object.entries(data.options)
+				.map(([key, value]) => `**${key}:** ${value}`)
+				.join("\n")
+			embed.addFields({ name: "Opciones", value: optionsStr })
 		}
-	} catch (error) {
-		logsLogger.error("Error procesando log de comando:", error)
+
+		await (channel as TextChannel).send({ embeds: [embed] })
 	}
-})
 
-botEvents.on("command:error", async (interaction, error) => {
-	if (!interaction.guildId) {return}
+	private async sendCommandErrorEmbed (data: ErrorEmbedData): Promise<void> {
+		const bot = BotInstance.getOrNull()
+		if (!bot) {return}
 
-	try {
-		await saveCommandLog({
-			interaction,
-			commandPath: `/${interaction.commandName}`,
-			options: {},
-			success: false,
-			error: error.message
+		const channel = await bot.channels.fetch(data.channelId)
+		if (!channel?.isTextBased()) {return}
+
+		const embed = new EmbedBuilder()
+			.setColor(0xed4245)
+			.setTitle("❌ Error en Comando")
+			.addFields(
+				{ name: "Comando", value: `\`/${data.interaction.commandName}\``, inline: true },
+				{ name: "Usuario", value: `${data.interaction.user} (${data.interaction.user.tag})`, inline: true },
+				{ name: "Canal", value: `<#${data.interaction.channelId}>`, inline: true },
+				{ name: "Error", value: `\`\`\`${data.error.message.substring(0, 1000)}\`\`\`` }
+			)
+			.setTimestamp()
+
+		await (channel as TextChannel).send({ embeds: [embed] })
+	}
+
+	register (): void {
+		/**
+		 * Listener de logs de comandos
+		 * Guarda en DB y envía embed al canal configurado
+		 */
+		botEvents.on("command:executed", async (interaction, commandPath, options) => {
+			if (!interaction.guildId) {return}
+
+			try {
+				await this.saveCommandLog({ interaction, commandPath, options, success: true })
+
+				const config = await this.repository.getConfig(interaction.guildId)
+
+				if (config?.commands?.enabled && config.commands.channelId) {
+					await this.sendCommandLogEmbed({
+						channelId: config.commands.channelId,
+						interaction,
+						commandPath,
+						options
+					})
+				}
+			} catch (error) {
+				logsLogger.error("Error procesando log de comando:", error)
+			}
 		})
 
-		const config = await LogConfigModel.findOne({ guildId: interaction.guildId })
+		botEvents.on("command:error", async (interaction, error) => {
+			if (!interaction.guildId) {return}
 
-		if (config?.commands?.enabled && config.commands.channelId) {
-			await sendCommandErrorEmbed({
-				channelId: config.commands.channelId,
-				interaction,
-				error
-			})
-		}
-	} catch (err) {
-		logsLogger.error("Error procesando log de error:", err)
+			try {
+				await this.saveCommandLog({
+					interaction,
+					commandPath: `/${interaction.commandName}`,
+					options: {},
+					success: false,
+					error: error.message
+				})
+
+				const config = await this.repository.getConfig(interaction.guildId)
+
+				if (config?.commands?.enabled && config.commands.channelId) {
+					await this.sendCommandErrorEmbed({
+						channelId: config.commands.channelId,
+						interaction,
+						error
+					})
+				}
+			} catch (err) {
+				logsLogger.error("Error procesando log de error:", err)
+			}
+		})
+
+		logsLogger.info("Listeners de logs de comandos registrados")
+
 	}
-})
-
-logsLogger.info("Listeners de logs de comandos registrados")
+}

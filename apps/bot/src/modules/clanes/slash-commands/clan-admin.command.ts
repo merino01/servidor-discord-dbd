@@ -1,59 +1,69 @@
-import { registerCommand, registerSubCommand } from "@/core/command-register"
 import { CommandContext } from "@types"
-import { PermissionFlagsBits, EmbedBuilder, MessageFlags, ApplicationCommandOptionType, ChannelType } from "discord.js"
-import { ClanService } from "../services/clan.service"
-import { BaseCommand } from "@/core/base/base-command"
+import { PermissionFlagsBits, MessageFlags, ApplicationCommandOptionType, ChannelType } from "discord.js"
+import { SlashCommand, Subcommand } from "@/core/decorators/command.decorators"
+import { Injectable } from "@/core/container"
+import { ClanAdminService } from "../services/clan-admin.service"
 
-export class ClanAdminCommand extends BaseCommand {
-	protected service = ClanService.getInstance()
+@Injectable(ClanAdminService)
+@SlashCommand({
+	name: "clan-admin",
+	description: "Comandos administrativos para clanes",
+	permissions: PermissionFlagsBits.Administrator
+})
+export class ClanAdminCommand {
+	constructor (private readonly service: ClanAdminService) {}
 
-	private buildSuccessEmbed (title: string, description: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0x00ff00)
-			.setTitle(`✅ ${title}`)
-			.setDescription(description)
-			.setTimestamp()
-	}
-
-	private buildErrorEmbed (error: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0xff0000)
-			.setTitle("❌ Error")
-			.setDescription(error)
-			.setTimestamp()
-	}
-
-	private buildMigrationSuccessEmbed (params: {
-		icono: string
-		nombre: string
-		liderId: string
-		rolId: string
-		canalTextoId: string
-		canalVozId: string
-		limite: number
-	}): EmbedBuilder {
-		return this.buildSuccessEmbed(
-			"Clan migrado",
-			`Se ha migrado el clan **${params.icono} ${params.nombre}**\n\n` +
-			`**Líder:** <@${params.liderId}>\n` +
-			`**Rol:** <@&${params.rolId}>\n` +
-			`**Canal de texto:** <#${params.canalTextoId}>\n` +
-			`**Canal de voz:** <#${params.canalVozId}>\n` +
-			`**Límite de miembros:** ${params.limite}`
-		)
-	}
-
-	async migrar (context: CommandContext): Promise<void> {
-		const { interaction } = context
-
-		if (!interaction.guild) {
-			await interaction.reply({
-				embeds: [this.buildErrorEmbed("Este comando solo puede usarse en un servidor.")],
-				flags: MessageFlags.Ephemeral
-			})
-			return
-		}
-
+	@Subcommand({
+		name: "migrar",
+		description: "Migrar un clan existente al sistema",
+		options: [
+			{
+				name: "nombre",
+				description: "Nombre del clan",
+				type: ApplicationCommandOptionType.String,
+				required: true
+			},
+			{
+				name: "icono",
+				description: "Icono del clan (emoji)",
+				type: ApplicationCommandOptionType.String,
+				required: true
+			},
+			{
+				name: "rol",
+				description: "Rol del clan",
+				type: ApplicationCommandOptionType.Role,
+				required: true
+			},
+			{
+				name: "canal_texto",
+				description: "Canal de texto del clan",
+				type: ApplicationCommandOptionType.Channel,
+				channelTypes: [ChannelType.GuildText],
+				required: true
+			},
+			{
+				name: "canal_voz",
+				description: "Canal de voz del clan",
+				type: ApplicationCommandOptionType.Channel,
+				channelTypes: [ChannelType.GuildVoice],
+				required: true
+			},
+			{
+				name: "limite",
+				description: "Límite de miembros",
+				type: ApplicationCommandOptionType.Integer,
+				required: true
+			},
+			{
+				name: "lider",
+				description: "Usuario líder del clan",
+				type: ApplicationCommandOptionType.User,
+				required: true
+			}
+		]
+	})
+	async migrar ({ interaction }: CommandContext) {
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
 		const nombre = interaction.options.getString("nombre", true)
@@ -64,100 +74,19 @@ export class ClanAdminCommand extends BaseCommand {
 		const limite = interaction.options.getInteger("limite", true)
 		const lider = interaction.options.getUser("lider", true)
 
-		if (!rol || !canalesTexto || !canalesVoz || !lider) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed("Debes proporcionar todos los datos requeridos.")]
-			})
-			return
-		}
-
-		const result = await this.service.createClan({
-			guildId: interaction.guild.id,
+		const reply = await this.service.migrate({
+			guildId: interaction.guildId!,
 			name: nombre,
 			icon: icono,
 			leaderId: lider.id,
 			createdBy: interaction.user.id,
 			roleId: rol.id,
-			textChannelIds: [canalesTexto.id],
-			voiceChannelIds: [canalesVoz.id],
+			textChannelIds: canalesTexto.id,
+			voiceChannelIds: canalesVoz.id,
 			maxMembers: limite,
 			migracion: true
 		})
 
-		if (!result.success || !result.clan) {
-			await interaction.editReply({
-				embeds: [this.buildErrorEmbed(result.error || "Error desconocido al migrar el clan.")]
-			})
-			return
-		}
-
-		const embed = this.buildMigrationSuccessEmbed({
-			icono,
-			nombre,
-			liderId: lider.id,
-			rolId: rol.id,
-			canalTextoId: canalesTexto.id,
-			canalVozId: canalesVoz.id,
-			limite
-		})
-		await interaction.editReply({ embeds: [embed] })
+		await interaction.editReply(reply)
 	}
 }
-
-registerCommand(ClanAdminCommand, {
-	name: "clan-admin",
-	description: "Comandos administrativos para clanes",
-	permissions: PermissionFlagsBits.Administrator,
-	options: []
-})
-
-registerSubCommand(ClanAdminCommand, "migrar", {
-	name: "migrar",
-	description: "Migrar un clan existente al sistema",
-	options: [
-		{
-			name: "nombre",
-			description: "Nombre del clan",
-			type: ApplicationCommandOptionType.String,
-			required: true
-		},
-		{
-			name: "icono",
-			description: "Icono del clan (emoji)",
-			type: ApplicationCommandOptionType.String,
-			required: true
-		},
-		{
-			name: "rol",
-			description: "Rol del clan",
-			type: ApplicationCommandOptionType.Role,
-			required: true
-		},
-		{
-			name: "canal_texto",
-			description: "Canal de texto del clan",
-			type: ApplicationCommandOptionType.Channel,
-			channelTypes: [ChannelType.GuildText],
-			required: true
-		},
-		{
-			name: "canal_voz",
-			description: "Canal de voz del clan",
-			type: ApplicationCommandOptionType.Channel,
-			channelTypes: [ChannelType.GuildVoice],
-			required: true
-		},
-		{
-			name: "limite",
-			description: "Límite de miembros",
-			type: ApplicationCommandOptionType.Integer,
-			required: true
-		},
-		{
-			name: "lider",
-			description: "Usuario líder del clan",
-			type: ApplicationCommandOptionType.User,
-			required: true
-		}
-	]
-})

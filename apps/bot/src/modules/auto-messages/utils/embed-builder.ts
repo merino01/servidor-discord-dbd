@@ -101,3 +101,85 @@ export function buildAutoMessageInfoEmbed (autoMessage: IAutoMessage): EmbedBuil
 
 	return embed
 }
+
+// Embed para confirmar creación de un mensaje automático
+export function buildCreatedEmbed (autoMessage: IAutoMessage): EmbedBuilder {
+	const embed = new EmbedBuilder()
+		.setColor(0x00ff00)
+		.setTitle("✅ Mensaje automático creado")
+		.addFields(
+			{ name: "Nombre", value: autoMessage.name, inline: true },
+			{
+				name: "Tipo",
+				value: autoMessage.cronExpression
+					? "⏰ Programado (cron)"
+					: "📁 Al crear canal",
+				inline: true
+			}
+		)
+
+	if (autoMessage.cronExpression) {
+		embed.addFields({ name: "Cron", value: `\`${autoMessage.cronExpression}\``, inline: true })
+	}
+
+	addCategoryExtraInfo(embed, autoMessage)
+
+	embed.addFields(
+		{
+			name: "Destino",
+			value: autoMessage.targetType === AutoMessageTargetType.CHANNEL
+				? `Canal: <#${autoMessage.targetId}>`
+				: `Categoría: <#${autoMessage.targetId}>`,
+			inline: false
+		},
+		{
+			name: "Mensaje",
+			value: autoMessage.message ? autoMessage.message.substring(0, 1000) : "Embed solo",
+			inline: false
+		}
+	)
+	embed.setFooter({ text: `ID: ${autoMessage._id}` })
+
+	return embed
+}
+
+export function buildListEmbed (autoMessages: IAutoMessage[], verEliminados: boolean): EmbedBuilder {
+	const titulo = verEliminados
+		? `🗑️ Mensajes automáticos eliminados (${autoMessages.length})`
+		: `📋 Mensajes automáticos (${autoMessages.length})`
+
+	const embed = new EmbedBuilder()
+		.setColor(verEliminados ? 0xff0000 : 0x0099ff)
+		.setTitle(titulo)
+		.setDescription("Selecciona un mensaje del menú para ver sus detalles")
+
+	if (autoMessages.length > 25) {
+		embed.setFooter({ text: `Mostrando 25 de ${autoMessages.length}` })
+	}
+
+	return embed
+}
+
+export function pauseEmbed (autoMessage: IAutoMessage, userTag: string): EmbedBuilder {
+	return new EmbedBuilder()
+		.setColor(0xffa500)
+		.setTitle("⏸️ Mensaje automático pausado")
+		.addFields(
+			{ name: "Nombre", value: autoMessage.name, inline: true },
+			{ name: "ID", value: autoMessage._id.toString(), inline: true }
+		)
+		.setDescription("Puedes reactivarlo cuando quieras usando `/automensaje reanudar`")
+		.setFooter({ text: `Pausado por ${userTag}` })
+}
+
+export function resumeEmbed (autoMessage: IAutoMessage, userTag: string): EmbedBuilder {
+	return new EmbedBuilder()
+		.setColor(0x00ff00)
+		.setTitle("▶️ Mensaje automático reanudado")
+		.addFields(
+			{ name: "Nombre", value: autoMessage.name, inline: true },
+			{ name: "ID", value: autoMessage._id.toString(), inline: true }
+		)
+		.setDescription("El mensaje automático está activo nuevamente.")
+		.setFooter({ text: `Reanudado por ${userTag}` })
+}

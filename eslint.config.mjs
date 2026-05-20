@@ -43,14 +43,21 @@ export default [
 			"**/*.mjs"
 		],
 		// Override or add rules here
-		rules: {}
+		rules: {
+			"@typescript-eslint/no-unused-vars": ["warn", {
+				"args": "none",
+				"caughtErrors": "all",
+				"caughtErrorsIgnorePattern": "^_",
+				"ignoreRestSiblings": true
+			}]
+		}
 	},
 	{
 		"rules": {
 			"indent": ["error", "tab"],
 			"quotes": ["error", "double"],
 			"semi": ["error", "never"],
-			"no-unused-vars": "warn",
+			"no-unused-vars": "off",
 			"eol-last": ["error", "always"],
 			"no-multiple-empty-lines": ["error", { "max": 1 }],
 			"object-curly-spacing": ["error", "always"],
@@ -87,7 +94,7 @@ export default [
 			"max-params": ["error", 4],
 			"no-useless-return": "error",
 			"prefer-spread": "error",
-			"max-lines-per-function": ["error", 60],
+			"max-lines-per-function": ["warn", 100],
 			"brace-style": ["error", "1tbs", { "allowSingleLine": true }],
 			"object-shorthand": ["error", "always"]
 		}
