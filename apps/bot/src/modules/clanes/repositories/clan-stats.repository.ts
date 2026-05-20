@@ -2,15 +2,6 @@ import { ClanStatsModel, IClanStats, ClanModel } from "@org/mongo"
 import { Types } from "mongoose"
 
 export class ClanStatsRepository {
-	private static instance: ClanStatsRepository
-
-	static getInstance (): ClanStatsRepository {
-
-		if (!ClanStatsRepository.instance) {
-			ClanStatsRepository.instance = new ClanStatsRepository()
-		}
-		return ClanStatsRepository.instance
-	}
 	/**
 	 * Obtiene o crea las estadísticas de los últimos 30 días de un clan
 	 */
@@ -231,5 +222,3 @@ export class ClanStatsRepository {
 		}
 	}
 }
-
-export const clanStatsRepository = new ClanStatsRepository()

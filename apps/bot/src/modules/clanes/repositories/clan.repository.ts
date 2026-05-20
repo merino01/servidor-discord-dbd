@@ -17,21 +17,13 @@ import {
 	ClanInvitationStatus,
 	IClan,
 	IClanConfig,
-	IClanInvitation
+	IClanInvitation,
+	Document
 } from "@org/mongo"
 
 const clanLogger = botLogger.child("clanes")
 
 export class ClanRepository {
-	private static instance: ClanRepository
-
-	static getInstance (): ClanRepository {
-		if (!ClanRepository.instance) {
-			ClanRepository.instance = new ClanRepository()
-		}
-		return ClanRepository.instance
-	}
-
 	private async cleanupClanCreation (
 		role: Role | null,
 		textChannel: TextChannel | null,
@@ -1193,10 +1185,47 @@ export class ClanRepository {
 		}
 	}
 
+	async setClanConfig (params: Omit<IClanConfig,
+		keyof Document |"color" | "createdAt" | "enabled" | "additionalRoleIds" | "updatedAt">
+		& {colorHex?: string | null}): Promise<IClanConfig> {
+		const {
+			guildId,
+			categoryTextId,
+			categoryVoiceId,
+			leaderRoleId,
+			invitationExpirationHours,
+			maxExtraVoiceChannels,
+			maxMembers,
+			colorHex } = params
+		return await ClanConfigModel.findOneAndUpdate(
+			{ guildId: params.guildId },
+			{
+				guildId,
+				enabled: true,
+				leaderRoleId,
+				categoryVoiceId,
+				categoryTextId,
+				color: colorHex ? parseInt(colorHex, 16) : null,
+				maxMembers,
+				maxExtraVoiceChannels,
+				invitationExpirationHours
+			},
+			{ upsert: true, new: true }
+		)
+	}
+
 	async getAllClans (guildId: string, deleted = false): Promise<IClan[]> {
 		return ClanModel.find({
 			guildId,
 			isActive: !deleted
 		}).sort({ createdAt: -1 })
+	}
+
+	async getClanByChannelId (guildId: string, channelId:string): Promise<IClan | null> {
+		return ClanModel.findOne({
+			guildId,
+			textChannelIds: channelId,
+			isActive: true
+		})
 	}
 }
