@@ -160,7 +160,7 @@ export class ClanConfigService {
 
 			const successEmbed = buildSuccessEmbed(
 				`Sistema ${statusText}`,
-				"El sistema de clanes ha sido habilitado correctamente."
+				`El sistema de clanes ha sido ${statusText} correctamente`
 			)
 			return { embeds: [successEmbed] }
 
