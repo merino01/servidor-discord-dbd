@@ -12,10 +12,13 @@ interface VoiceSession {
 
 @Injectable(ClanStatsRepository)
 export class ClanVoiceListener {
+	private voiceSessions: Map<string, VoiceSession>
+
 	constructor (
-		private voiceSessions = new Map<string, VoiceSession>(),
 		private readonly statsRepository: ClanStatsRepository
-	) {}
+	) {
+		this.voiceSessions = new Map<string, VoiceSession>()
+	}
 
 	/**
  * Maneja cuando un usuario se une a un canal de voz de clan
