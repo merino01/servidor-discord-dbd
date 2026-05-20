@@ -20,8 +20,9 @@ import {
 	User
 } from "discord.js"
 import { ClanRepository } from "../repositories/clan.repository"
-import { buildSuccessEmbed } from "../utils/embeds"
-import { chunkArray, MembersExtraData } from "../utils/members"
+import { buildSuccessEmbed } from "@/util/embeds"
+import { MembersExtraData } from "../utils/members"
+import { chunkArray } from "@/util/arrays"
 
 interface ICreateClanData {
 	guildId: string

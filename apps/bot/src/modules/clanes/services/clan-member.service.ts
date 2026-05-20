@@ -13,10 +13,12 @@ import {
 } from "discord.js"
 import { ClanRepository } from "../repositories/clan.repository"
 import { buildErrorEmbed } from "@/modules/echo/utils/embed"
-import { buildMemberEmbed, buildSuccessEmbed } from "../utils/embeds"
+import { buildMemberEmbed } from "@/modules/clanes/utils/embeds"
+import { buildSuccessEmbed } from "@/util/embeds"
 import { botLogger } from "@/core/logger"
 import { IClan, IClanInvitation } from "@org/mongo"
-import { chunkArray, MembersExtraData } from "../utils/members"
+import { MembersExtraData } from "../utils/members"
+import { chunkArray } from "@/util/arrays"
 
 const clanLogger = botLogger.child("clanes")
 

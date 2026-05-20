@@ -1,4 +1,7 @@
+import { botLogger } from "@/core/logger"
+import { CommandReply } from "@/core/types"
 import {
+	APIEmbedField,
 	APIInteractionDataResolvedChannel,
 	CategoryChannel,
 	ChannelType,
@@ -11,11 +14,11 @@ import {
 	TextInputStyle,
 	User
 } from "discord.js"
-import { sendMessage } from "../utils/send-message"
-import { botLogger } from "@/core/logger"
-import { CommandReply } from "@/core/types"
-import { buildConfirmEmbed, buildErrorEmbed } from "../utils/embed"
 import { MODAL_REPLY } from "../constans"
+import { buildConfirmEmbed } from "../utils/embed"
+import { sendMessage } from "../utils/send-message"
+import { chunkArray } from "@/util/arrays"
+import { buildErrorEmbed } from "@/util/embeds"
 
 interface EchoInput {
 	channel: TextChannel
@@ -82,43 +85,70 @@ export class EchoService {
 		return modal
 	}
 
+	private buildMessageField (channel: TextChannel, success: boolean): APIEmbedField {
+		return {
+			name: "",
+			value: `<#${channel.id}> **-->** ${success ? "✅" : "❌"}`
+		}
+	}
+
+	private buildResultEmbeds (fields: APIEmbedField[]): EmbedBuilder[] {
+		if (fields.length === 0) {
+			return [
+				buildErrorEmbed("La categoría seleccionada no contiene canales de texto")
+			]
+		}
+
+		return chunkArray(fields, 25).map((chunk, index, chunks) => {
+			const embed = new EmbedBuilder()
+				.setTitle(index === 0 ? "✅ Mensaje enviado" : " ")
+				.setColor(0x00ff00)
+				.setTimestamp()
+				.addFields(chunk)
+
+			if (chunks.length > 1) {
+				embed.setFooter({ text: `Página ${index + 1} de ${chunks.length}` })
+			}
+
+			return embed
+		})
+	}
+
 	async sendMessageCategory (
 		category: CategoryChannel,
 		userId: string,
 		message?: string | null,
 		embedJson?: string | null
-	): Promise<EmbedBuilder> {
+	): Promise<EmbedBuilder[]> {
 		const channels = category.children
-		const embed = new EmbedBuilder()
-			.setTitle("✅ Mensaje enviado")
-			.setColor(0x00ff00)
-			.setTimestamp()
-		let emoji = "❌"
-		for (const channel of channels.cache) {
-			if (channel[1].type !== ChannelType.GuildText) {
+		const fields: APIEmbedField[] = []
+
+		for (const [, channel] of channels.cache) {
+			if (channel.type !== ChannelType.GuildText) {
 				continue
 			}
 
 			const result = await sendMessage(
-				channel[1],
+				channel,
 				message ?? null,
 				embedJson ?? null
 			)
 
 			if (result.success) {
 				echoLogger.info(
-					`User ${userId} sent echo message to channel ${channel[1].id} in guild ${channel[1].guildId}`
+					`User ${userId} sent echo message to channel ${channel.id} in guild ${channel.guildId}`
 				)
-				emoji = "✅"
+			} else {
+				echoLogger.error(
+					`Error al intentar enviar echo en el canal ${channel.id}`,
+					result.error
+				)
 			}
 
-			embed.addFields({
-				name: "",
-				value: `<#${channel[1].id}> **-->** ${emoji}`
-			})
+			fields.push(this.buildMessageField(channel, result.success))
 		}
 
-		return embed
+		return this.buildResultEmbeds(fields)
 	}
 
 	async sendEcho (options: EchoInput & { user: User }): Promise<CommandReply> {
@@ -144,8 +174,8 @@ export class EchoService {
 		}
 
 		if (category) {
-			const embed = await this.sendMessageCategory(category, options.user.id, message, embedJson)
-			return { embeds: [embed] }
+			const embeds = await this.sendMessageCategory(category, options.user.id, message, embedJson)
+			return { embeds }
 		}
 
 		const result = await sendMessage(
