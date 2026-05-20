@@ -15,6 +15,6 @@ export class CleanOldStatsCron {
 		}
 	}
 	register () {
-		scheduleCronJob("0 0 3 * * *", this.cleanOldStats, "clean-old-clan-stats")
+		scheduleCronJob("0 0 3 * * *", () => this.cleanOldStats(), "clean-old-clan-stats")
 	}
 }
