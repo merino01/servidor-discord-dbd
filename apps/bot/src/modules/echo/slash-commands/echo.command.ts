@@ -58,6 +58,10 @@ export class EchoCommand extends BaseCommand {
 		const inputText = interaction.options.getBoolean("texto")
 		const inputCategory = interaction.options.getChannel("categoría") as CategoryChannel
 
+		if (!inputText) {
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+		}
+
 		const reply = await this.service.sendEcho({
 			channel: inputChannel,
 			message: inputMessage,
@@ -75,10 +79,7 @@ export class EchoCommand extends BaseCommand {
 			return
 		}
 
-		await interaction.reply({
-			...reply,
-			flags: MessageFlags.Ephemeral
-		})
+		await interaction.editReply(reply)
 	}
 }
 
