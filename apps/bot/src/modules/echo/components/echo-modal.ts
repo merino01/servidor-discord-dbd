@@ -1,10 +1,10 @@
 import { registerModal } from "@/core/components/component-registry"
-import { CategoryChannel, MessageFlags, ModalSubmitInteraction, TextChannel } from "discord.js"
-import { sendMessage } from "../utils/send-message"
-import { buildConfirmEmbed } from "../utils/embed"
-import { botLogger } from "@/core/logger"
-import { ChannelTypeOption, EchoService } from "../services/echo.service"
 import { Injectable } from "@/core/container"
+import { botLogger } from "@/core/logger"
+import { CategoryChannel, MessageFlags, ModalSubmitInteraction, TextChannel } from "discord.js"
+import { ChannelTypeOption, EchoService } from "../services/echo.service"
+import { buildConfirmEmbed } from "../utils/embed"
+import { sendMessage } from "../utils/send-message"
 
 const echoLogger = botLogger.child("echo")
 
@@ -25,9 +25,8 @@ export class EchoModalComponent {
 		)
 
 		if (!result.success) {
-			await interaction.reply({
-				content: result.error ?? "❌ Error desconocido",
-				flags: MessageFlags.Ephemeral
+			await interaction.editReply({
+				content: result.error ?? "❌ Error desconocido"
 			})
 			return
 		}
@@ -37,9 +36,8 @@ export class EchoModalComponent {
 			interaction.user.tag,
 			false
 		)
-		await interaction.reply({
-			embeds: [confirmEmbed],
-			flags: MessageFlags.Ephemeral
+		await interaction.editReply({
+			embeds: [confirmEmbed]
 		})
 
 		echoLogger.info(
@@ -52,26 +50,29 @@ export class EchoModalComponent {
 		categoryId: string,
 		message: string): Promise<void> {
 		const category = await interaction.guild?.channels.fetch(categoryId) as CategoryChannel
-		const embed = await this.service.sendMessageCategory(category, interaction.user.id, message)
-		await interaction.reply({
-			embeds: [embed],
-			flags: MessageFlags.Ephemeral
+		const embeds = await this.service.sendMessageCategory(category, interaction.user.id, message)
+		await interaction.editReply({
+			embeds
 		})
 	}
 
 	register (): void {
 		registerModal("echo_modal", async (interaction: ModalSubmitInteraction) => {
-			const message = interaction.fields.getTextInputValue("echo_modal_text")
-			const [, ,channelType, channelId] = interaction.customId.split("_")
-			console.log(channelId, channelType)
+			try {
+				await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+				const message = interaction.fields.getTextInputValue("echo_modal_text")
+				const [, ,channelType, channelId] = interaction.customId.split("_")
 
-			switch (channelType as ChannelTypeOption) {
-			case "text":
-				await this.handleTextEcho(interaction, channelId, message)
-				break
-			case "category":
-				await this.handleCategoryEcho(interaction, channelId, message)
-				break
+				switch (channelType as ChannelTypeOption) {
+				case "text":
+					await this.handleTextEcho(interaction, channelId, message)
+					break
+				case "category":
+					await this.handleCategoryEcho(interaction, channelId, message)
+					break
+				}
+			} catch (error) {
+				echoLogger.error("Error en la modal del comando echo", error)
 			}
 		})
 	}
