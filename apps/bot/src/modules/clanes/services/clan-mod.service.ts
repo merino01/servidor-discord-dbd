@@ -1,7 +1,6 @@
 import { Injectable } from "@/core/container"
 import { botLogger } from "@/core/logger"
 import { CommandContext, CommandReply } from "@/core/types"
-import { buildErrorEmbed } from "@/modules/echo/utils/embed"
 import { IClan } from "@org/mongo"
 import {
 	ActionRowBuilder,
@@ -20,7 +19,7 @@ import {
 	User
 } from "discord.js"
 import { ClanRepository } from "../repositories/clan.repository"
-import { buildSuccessEmbed } from "@/util/embeds"
+import { buildErrorEmbed, buildSuccessEmbed } from "@/util/embeds"
 import { MembersExtraData } from "../utils/members"
 import { chunkArray } from "@/util/arrays"
 

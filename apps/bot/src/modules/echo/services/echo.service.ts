@@ -15,7 +15,7 @@ import {
 	User
 } from "discord.js"
 import { MODAL_REPLY } from "../constans"
-import { buildConfirmEmbed } from "../utils/embed"
+import { buildChannelErrorEmbed, buildConfirmEmbed } from "../utils/embed"
 import { sendMessage } from "../utils/send-message"
 import { chunkArray } from "@/util/arrays"
 import { buildErrorEmbed } from "@/util/embeds"
@@ -185,7 +185,7 @@ export class EchoService {
 		)
 
 		if (!result.success) {
-			return { embeds: [buildErrorEmbed(channel.id)] }
+			return { embeds: [buildChannelErrorEmbed(channel.id)] }
 		}
 
 		const confirmEmbed = buildConfirmEmbed(

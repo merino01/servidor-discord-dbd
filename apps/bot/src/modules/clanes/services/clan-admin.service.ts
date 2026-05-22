@@ -3,6 +3,7 @@ import { CommandReply } from "@/core/types"
 import { ClanRepository } from "../repositories/clan.repository"
 import { Injectable } from "@/core/container"
 import { botLogger } from "@/core/logger"
+import { buildErrorEmbed, buildSuccessEmbed } from "@/util/embeds"
 
 interface MigrateClanParams {
 	guildId: string
@@ -24,22 +25,6 @@ export class ClanAdminService {
 	constructor (private readonly repository: ClanRepository) {}
 	// protected service = ClanRepository.getInstance()
 
-	private buildSuccessEmbed (title: string, description: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0x00ff00)
-			.setTitle(`✅ ${title}`)
-			.setDescription(description)
-			.setTimestamp()
-	}
-
-	private buildErrorEmbed (error: string): EmbedBuilder {
-		return new EmbedBuilder()
-			.setColor(0xff0000)
-			.setTitle("❌ Error")
-			.setDescription(error)
-			.setTimestamp()
-	}
-
 	private buildMigrationSuccessEmbed (params: {
 			icono: string
 			nombre: string
@@ -49,7 +34,7 @@ export class ClanAdminService {
 			canalVozId: string
 			limite: number
 		}): EmbedBuilder {
-		return this.buildSuccessEmbed(
+		return buildSuccessEmbed(
 			"Clan migrado",
 			`Se ha migrado el clan **${params.icono} ${params.nombre}**\n\n` +
 				`**Líder:** <@${params.liderId}>\n` +
@@ -76,7 +61,7 @@ export class ClanAdminService {
 		})
 
 		if (!result.success || !result.clan) {
-			return { embeds: [this.buildErrorEmbed(result.error || "Error desconocido al migrar el clan.")] }
+			return { embeds: [buildErrorEmbed(result.error || "Error desconocido al migrar el clan.")] }
 		}
 
 		const embed = this.buildMigrationSuccessEmbed({
