@@ -29,7 +29,7 @@ export function buildConfirmEmbed (
 		.setTimestamp()
 }
 
-export function buildErrorEmbed (channelId: string): EmbedBuilder {
+export function buildChannelErrorEmbed (channelId: string): EmbedBuilder {
 	return new EmbedBuilder()
 		.setColor(0xff0000)
 		.setTitle("❌ Error")
