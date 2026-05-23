@@ -1,5 +1,13 @@
 import { EventEmitter } from "node:events"
-import { ChatInputCommandInteraction, Message, VoiceState, Guild, GuildMember, PartialMessage } from "discord.js"
+import {
+	ChatInputCommandInteraction,
+	Message,
+	VoiceState,
+	Guild,
+	GuildMember,
+	PartialMessage,
+	PartialGuildMember
+} from "discord.js"
 
 /**
  * Tipos de eventos del bot
@@ -25,7 +33,7 @@ export interface BotEvents {
 
 	// Miembros
 	"member:join": [member: GuildMember]
-	"member:leave": [member: GuildMember]
+	"member:leave": [member: GuildMember | PartialGuildMember]
 	"member:ban": [guild: Guild, userId: string]
 	"member:unban": [guild: Guild, userId: string]
 
