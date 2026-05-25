@@ -197,7 +197,7 @@ export class ClanLogsListener {
 				.addFields(
 					{ name: "Nombre del clan", value: data.clanName, inline: true },
 					{ name: "ID del Clan", value: data.clanId, inline: true },
-					{ name: "Lider", value: `<@${data.leaderId}> - ${data.leaderId}` },
+					{ name: "Lider", value: `<@${data.leaderId}>` },
 					{ name: "Añadido por", value: `<@${data.addedBy}>`, inline: true }
 				)
 				.setColor(CLANS_COLORS.LEADER_ADD)
@@ -217,7 +217,7 @@ export class ClanLogsListener {
 				.addFields(
 					{ name: "Nombre del clan", value: data.clanName, inline: true },
 					{ name: "ID del Clan", value: data.clanId, inline: true },
-					{ name: "Lider", value: `<@${data.leaderId}> - ${data.leaderId}` },
+					{ name: "Lider", value: `<@${data.leaderId}>` },
 					{ name: "Eliminado por", value: `<@${data.removedBy}>`, inline: true }
 				)
 				.setColor(CLANS_COLORS.LEADER_REMOVE)
@@ -237,7 +237,7 @@ export class ClanLogsListener {
 				.addFields(
 					{ name: "Nombre del clan", value: data.clanName, inline: true },
 					{ name: "ID del Clan", value: data.clanId, inline: true },
-					{ name: "Miembro", value: `<@${data.memberId}> - ${data.memberId}` },
+					{ name: "Miembro", value: `<@${data.memberId}>` },
 					{ name: "Añadido por", value: `<@${data.addedBy}>`, inline: true }
 				)
 				.setColor(CLANS_COLORS.MEMBER_ADD)
@@ -257,7 +257,7 @@ export class ClanLogsListener {
 				.addFields(
 					{ name: "Nombre del clan", value: data.clanName, inline: true },
 					{ name: "ID del Clan", value: data.clanId, inline: true },
-					{ name: "Miembro", value: `<@${data.memberId}> - ${data.memberId}` },
+					{ name: "Miembro", value: `<@${data.memberId}>` },
 					{ name: "Expulsado por", value: `<@${data.removedBy}>`, inline: true }
 				)
 				.setColor(CLANS_COLORS.MEMBER_KICK)
@@ -277,7 +277,7 @@ export class ClanLogsListener {
 				.addFields(
 					{ name: "Nombre del clan", value: data.clanName, inline: true },
 					{ name: "ID del Clan", value: data.clanId, inline: true },
-					{ name: "Miembro", value: `<@${data.memberId}> - ${data.memberId}` }
+					{ name: "Miembro", value: `<@${data.memberId}>` }
 				)
 				.setColor(CLANS_COLORS.MEMBER_LEAVE)
 				.setTimestamp()
