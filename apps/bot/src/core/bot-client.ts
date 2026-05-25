@@ -5,6 +5,7 @@ import { getButtonHandler, getSelectMenuHandler, getModalHandler } from "./compo
 import { CommandContext } from "@types"
 import { botLogger } from "@core/logger"
 import { botEvents } from "./events/bot-events"
+import { reportBotError } from "@/modules/logs/services/error-reporter"
 
 /**
  * Cliente principal del bot con gestión de comandos integrada
@@ -59,22 +60,18 @@ export class BotClient extends Client {
 			return
 		}
 
-		// Log automático de ejecución de comando
 		const subcommand = interaction.options.getSubcommand?.(false)
 		const commandPath = subcommand
 			? `/${interaction.commandName} ${subcommand}`
 			: `/${interaction.commandName}`
 
-		// Extraer opciones para el log
 		const options: Record<string, any> = {}
 		interaction.options.data.forEach((option: any) => {
 			if (option.type === 1 || option.type === 2) {
-				// Subcomando o grupo de subcomandos - extraer sus opciones
 				option.options?.forEach((subOption: any) => {
 					options[subOption.name] = subOption.value
 				})
 			} else {
-				// Opción directa
 				options[option.name] = option.value
 			}
 		})
@@ -94,15 +91,18 @@ export class BotClient extends Client {
 		try {
 			const context: CommandContext = { interaction }
 			await command.execute(context)
-
-			// Emitir evento de comando ejecutado
 			botEvents.emit("command:executed", interaction, commandPath, options)
 		} catch (error) {
 			botLogger.error(`Error ejecutando comando ${interaction.commandName}: `, error)
-
-			// Emitir evento de error
+			const contextInfo = `Comando: /${interaction.commandName} | `
+				+ `Usuario: ${interaction.user.tag} (${interaction.user.id})`
+			await this.reportInteractionError(
+				interaction,
+				error,
+				"Error ejecutando comando",
+				contextInfo
+			)
 			botEvents.emit("command:error", interaction, error as Error)
-
 			await this.replyError(interaction, "❌ Hubo un error ejecutando este comando.")
 		}
 	}
@@ -122,6 +122,9 @@ export class BotClient extends Client {
 			await handler(interaction)
 		} catch (error) {
 			botLogger.error(`Error en botón ${interaction.customId}: `, error)
+			const contextInfo = `Custom ID: ${interaction.customId} | `
+				+ `Usuario: ${interaction.user.tag} (${interaction.user.id})`
+			await this.reportInteractionError(interaction, error, "Error en interacción de botón", contextInfo)
 			await this.replyError(interaction, "❌ Hubo un error procesando esta acción.")
 		}
 	}
@@ -141,6 +144,9 @@ export class BotClient extends Client {
 			await handler(interaction)
 		} catch (error) {
 			botLogger.error(`Error en select menu ${interaction.customId}: `, error)
+			const contextInfo = `Custom ID: ${interaction.customId} | `
+				+ `Usuario: ${interaction.user.tag} (${interaction.user.id})`
+			await this.reportInteractionError(interaction, error, "Error en interacción de select menu", contextInfo)
 			await this.replyError(interaction, "❌ Hubo un error procesando esta selección.")
 		}
 	}
@@ -160,6 +166,9 @@ export class BotClient extends Client {
 			await handler(interaction)
 		} catch (error) {
 			botLogger.error(`Error en modal ${interaction.customId}: `, error)
+			const contextInfo = `Custom ID: ${interaction.customId} | `
+				+ `Usuario: ${interaction.user.tag} (${interaction.user.id})`
+			await this.reportInteractionError(interaction, error, "Error en interacción de modal", contextInfo)
 			await this.replyError(interaction, "❌ Hubo un error procesando este formulario.")
 		}
 	}
@@ -177,6 +186,33 @@ export class BotClient extends Client {
 		}
 	}
 
+	private getGuildIdFromEventArgs (args: any[]): string | undefined {
+		for (const arg of args) {
+			if (typeof arg?.guildId === "string") {
+				return arg.guildId
+			}
+			if (typeof arg?.guild?.id === "string") {
+				return arg.guild.id
+			}
+		}
+
+		return undefined
+	}
+
+	private async reportInteractionError (
+		interaction: any,
+		error: unknown,
+		title: string,
+		context: string
+	): Promise<void> {
+		await reportBotError({
+			error,
+			title,
+			guildId: interaction.guildId ?? undefined,
+			context
+		})
+	}
+
 	/**
    * Registra todos los eventos personalizados
    */
@@ -192,6 +228,12 @@ export class BotClient extends Client {
 						await event.handler(...args)
 					} catch (error) {
 						botLogger.error(`Error en evento ${event.name}:`, error)
+						await reportBotError({
+							error,
+							title: "Error en evento del bot",
+							context: `Evento: ${event.name}`,
+							guildId: this.getGuildIdFromEventArgs(args)
+						})
 					}
 				})
 			} else {
@@ -200,6 +242,12 @@ export class BotClient extends Client {
 						await event.handler(...args)
 					} catch (error) {
 						botLogger.error(`Error en evento ${event.name}: `, error)
+						await reportBotError({
+							error,
+							title: "Error en evento del bot",
+							context: `Evento: ${event.name}`,
+							guildId: this.getGuildIdFromEventArgs(args)
+						})
 					}
 				})
 			}

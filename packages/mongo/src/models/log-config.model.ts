@@ -9,7 +9,8 @@ export enum LogType {
 	MESSAGES = "messages",
 	VOICE = "voice",
 	MODERATION = "moderation",
-	MEMBERS = "members"
+	MEMBERS = "members",
+	ERRORS = "botErrors"
 }
 
 export interface ILogConfig extends Document {
@@ -61,6 +62,12 @@ export interface ILogConfig extends Document {
 		logLeave: boolean
 	}
 
+	// Configuración de logs de errores del bot
+	botErrors: {
+		enabled: boolean
+		channelId?: string
+	}
+
 	createdAt: Date
 	updatedAt: Date
 }
@@ -101,6 +108,11 @@ const LogConfigSchema = new Schema<ILogConfig>({
 		channelId: { type: String },
 		logJoin: { type: Boolean, default: true },
 		logLeave: { type: Boolean, default: true }
+	},
+
+	botErrors: {
+		enabled: { type: Boolean, default: false },
+		channelId: { type: String }
 	},
 
 	clans: {

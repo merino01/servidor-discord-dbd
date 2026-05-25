@@ -19,7 +19,8 @@ export class LogsCommand extends BaseCommand {
 				voice: { enabled: false, logJoin: true, logLeave: true, logMove: true },
 				moderation: { enabled: false, logTimeouts: true, logKicks: true, logBans: true },
 				members: { enabled: false, logJoin: true, logLeave: true },
-				clans: { enabled: false }
+				clans: { enabled: false },
+				botErrors: { enabled: false }
 			})
 		}
 
@@ -38,10 +39,14 @@ export class LogsCommand extends BaseCommand {
 			[LogType.MESSAGES]: config.messages,
 			[LogType.VOICE]: config.voice,
 			[LogType.MODERATION]: config.moderation,
-			[LogType.MEMBERS]: config.members
+			[LogType.MEMBERS]: config.members,
+			[LogType.ERRORS]: config.botErrors ?? { enabled: false }
 		}
 
 		const targetConfig = configMap[tipo]
+		if (tipo === LogType.ERRORS && !config.botErrors) {
+			config.botErrors = targetConfig
+		}
 		targetConfig.enabled = habilitado
 		if (canalId) {
 			targetConfig.channelId = canalId
@@ -167,6 +172,11 @@ export class LogsCommand extends BaseCommand {
 					name: "👥 Miembros",
 					value: this.formatLogConfig(config.members.enabled, config.members.channelId),
 					inline: false
+				},
+				{
+					name: "🚨 Errores",
+					value: this.formatLogConfig(config.botErrors?.enabled ?? false, config.botErrors?.channelId),
+					inline: false
 				}
 			)
 			.setTimestamp()
@@ -179,7 +189,8 @@ export class LogsCommand extends BaseCommand {
 			[LogType.MESSAGES]: "💬 Mensajes",
 			[LogType.VOICE]: "🔊 Voz",
 			[LogType.MODERATION]: "🛡️ Moderación",
-			[LogType.MEMBERS]: "👥 Miembros"
+			[LogType.MEMBERS]: "👥 Miembros",
+			[LogType.ERRORS]: "🚨 Errores"
 		}
 		return labels[tipo]
 	}
@@ -219,7 +230,8 @@ registerSubCommand(LogsCommand, "configurar", {
 				{ name: "💬 Mensajes", value: LogType.MESSAGES },
 				{ name: "🔊 Voz", value: LogType.VOICE },
 				{ name: "🛡️ Moderación", value: LogType.MODERATION },
-				{ name: "👥 Miembros", value: LogType.MEMBERS }
+				{ name: "👥 Miembros", value: LogType.MEMBERS },
+				{ name: "🚨 Errores", value: LogType.ERRORS }
 			]
 		},
 		{
