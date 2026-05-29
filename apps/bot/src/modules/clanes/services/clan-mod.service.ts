@@ -101,7 +101,7 @@ export class ClanModService {
 			return { embeds: [buildErrorEmbed(`No se encontró ningún clan asociado al rol ${role.name}.`)] }
 		}
 
-		const result = await this.repository.deleteClan(clan._id, userId)
+		const result = await this.repository.deleteClan(clan._id.toString(), userId)
 		if (!result.success) {
 			return { embeds: [buildErrorEmbed(result.error || "Error desconocido al eliminar el clan.")] }
 		}
