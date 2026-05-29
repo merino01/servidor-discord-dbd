@@ -399,7 +399,7 @@ export class ClanRepository {
 			return { success: false, error: "Cliente de Discord no disponible" }
 		}
 
-		const clan = await ClanModel.findById(new Types.ObjectId(clanId)
+		const clan = await ClanModel.findById(new Types.ObjectId(clanId))
 		if (!clan) {
 			return { success: false, error: "Clan no encontrado" }
 		}
