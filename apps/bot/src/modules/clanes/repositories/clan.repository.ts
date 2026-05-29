@@ -18,7 +18,8 @@ import {
 	IClan,
 	IClanConfig,
 	IClanInvitation,
-	Document
+	Document,
+  Types
 } from "@org/mongo"
 
 const clanLogger = botLogger.child("clanes")
@@ -398,7 +399,7 @@ export class ClanRepository {
 			return { success: false, error: "Cliente de Discord no disponible" }
 		}
 
-		const clan = await ClanModel.findById(clanId)
+		const clan = await ClanModel.findById(Types.ObjectId(clanId)
 		if (!clan) {
 			return { success: false, error: "Clan no encontrado" }
 		}

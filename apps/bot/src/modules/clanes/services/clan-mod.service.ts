@@ -96,8 +96,7 @@ export class ClanModService {
 
 	// Función directa al comando
 	async deleteClan (guildId: string, role: Role | APIRole): Promise<CommandReply> {
-		const clan = await this.repository.getClanByRole(guildId,role.id)
-
+		const clan = await this.repository.getClanByRole(guildId, role.id)
 		if (!clan) {
 			return { embeds: [buildErrorEmbed(`No se encontró ningún clan asociado al rol ${role.name}.`)] }
 		}
