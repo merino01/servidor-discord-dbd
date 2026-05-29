@@ -19,7 +19,7 @@ import {
 	IClanConfig,
 	IClanInvitation,
 	Document,
-    Types
+	Types
 } from "@org/mongo"
 
 const clanLogger = botLogger.child("clanes")
@@ -393,13 +393,13 @@ export class ClanRepository {
 		}
 	}
 
-	async deleteClan (clanId: string, deletedBy: string): Promise<{ success: boolean; error?: string }> {
+	async deleteClan (clanId: Types.ObjectId, deletedBy: string): Promise<{ success: boolean; error?: string }> {
 		const client = BotInstance.get()
 		if (!client) {
 			return { success: false, error: "Cliente de Discord no disponible" }
 		}
 
-		const clan = await ClanModel.findById(new Types.ObjectId(clanId))
+		const clan = await ClanModel.findById(clanId)
 		if (!clan) {
 			return { success: false, error: "Clan no encontrado" }
 		}

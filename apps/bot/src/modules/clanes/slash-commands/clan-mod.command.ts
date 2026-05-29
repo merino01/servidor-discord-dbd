@@ -75,7 +75,7 @@ export class ClanModCommand {
 
 		await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
-		const reply = await this.service.deleteClan(interaction.guild!.id, rol)
+		const reply = await this.service.deleteClan(interaction.guild!.id, rol, interaction.user.id)
 		await interaction.editReply(reply)
 	}
 
